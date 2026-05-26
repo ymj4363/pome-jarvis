@@ -1013,19 +1013,18 @@ export default function App() {
             ) : (
               <div className="stack">
                 {tasks.map(task => (
-                  <div className={`task-card ${task.done ? "done" : ""}`} key={task.id}>
-                    <button
-                      className={task.done ? "ghost" : ""}
-                      style={task.done ? { color: "var(--success)", boxShadow: "inset 0 0 0 1px var(--success-border)" } : {}}
-                      onClick={() => toggleTask(task.id)}
-                    >
-                      {task.done ? "완료 ✓" : "진행"}
-                    </button>
-                    <div>
+                  <label className={`task-card ${task.done ? "done" : ""}`} key={task.id} style={{ cursor: "pointer" }}>
+                    <input
+                      type="checkbox"
+                      checked={task.done}
+                      onChange={() => toggleTask(task.id)}
+                      style={{ width: 16, height: 16, flexShrink: 0, accentColor: "var(--brand)", cursor: "pointer", marginTop: 2 }}
+                    />
+                    <div style={{ flex: 1, minWidth: 0 }}>
                       <strong>{task.title}</strong>
                       <span>{task.owner} · {task.due} · {task.source}</span>
                     </div>
-                  </div>
+                  </label>
                 ))}
               </div>
             ))}
