@@ -100,8 +100,8 @@ export async function onRequestGet({
   // pageToken (더 보기 페이지네이션)
   const reqUrl    = new URL(request.url);
   const pageToken = reqUrl.searchParams.get("pageToken");
-  // Primary 탭 안 읽은 메일 10건 (프로모션·소셜·뉴스레터 제외)
-  const q = encodeURIComponent("in:inbox is:unread category:primary");
+  // 최근 7일 이내 안 읽은 받은편지함 메일 (오래된 뉴스레터·알림 제외)
+  const q = encodeURIComponent("in:inbox is:unread newer_than:7d");
   const listPath  = `/messages?maxResults=10&q=${q}${pageToken ? `&pageToken=${encodeURIComponent(pageToken)}` : ""}`;
 
   // 1. 받은편지함 목록 조회 (최근 10건)
