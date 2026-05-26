@@ -219,7 +219,15 @@ export default function App() {
 
     if (code && state) {
       handleOAuthCallback(code, state)
-        .then(newAuth => { setAuth(newAuth); resetMeeting(); return loadRealData(newAuth.accessToken, newAuth.user.name); })
+        .then(newAuth => {
+          setAuth(newAuth);
+          resetMeeting();
+          // 데모 데이터 전체 삭제 — 실제 데이터로 새로 시작
+          setTasks([]);
+          setApprovals([]);
+          setLogs([]);
+          return loadRealData(newAuth.accessToken, newAuth.user.name);
+        })
         .catch(() => showToast("구글 로그인에 실패했습니다. 다시 시도해 주세요.", "error"));
       return;
     }
