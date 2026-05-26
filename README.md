@@ -30,3 +30,12 @@ pnpm build
 - Build command: `pnpm build`
 - Output directory: `dist`
 
+### Automatic deployment
+
+This repository includes a GitHub Actions workflow at `.github/workflows/deploy-pages.yml`.
+Set these repository secrets before relying on automatic deployments:
+
+- `CLOUDFLARE_ACCOUNT_ID`
+- `CLOUDFLARE_API_TOKEN`
+
+The token needs Cloudflare Pages write access for the `pome-jarvis` project.
