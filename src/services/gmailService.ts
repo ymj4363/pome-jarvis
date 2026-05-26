@@ -58,6 +58,27 @@ export async function fetchMailBody(
   return data.body;
 }
 
+/* ── 메일 읽음 처리 ──────────────────────────────────────────────── */
+
+export async function markAsRead(
+  accessToken: string,
+  messageId: string
+): Promise<void> {
+  const response = await fetch("/api/gmail/markread", {
+    method: "POST",
+    headers: {
+      Authorization:  `Bearer ${accessToken}`,
+      "content-type": "application/json"
+    },
+    body: JSON.stringify({ messageId })
+  });
+
+  if (!response.ok) {
+    const data = await response.json().catch(() => ({ error: "unknown" })) as { error?: string };
+    throw new Error(data.error ?? `Mark read failed: ${response.status}`);
+  }
+}
+
 /* ── 메일 휴지통 이동 ────────────────────────────────────────────── */
 
 export async function trashMail(

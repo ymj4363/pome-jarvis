@@ -3,7 +3,7 @@ import { initialEvents, initialMails } from "./data";
 import { createReplyDraftApproval, decideApproval as decideApprovalState } from "./services/approvalService";
 import { draftReply, extractMeetingActions, fetchBriefing } from "./services/assistantService";
 import { createCalendarEvent, deleteCalendarEvent, fetchCalendarEvents } from "./services/calendarService";
-import { fetchGmailMessages, fetchMailBody, fetchMoreMails, saveDraft, trashMail } from "./services/gmailService";
+import { fetchGmailMessages, fetchMailBody, fetchMoreMails, markAsRead, saveDraft, trashMail } from "./services/gmailService";
 import {
   getAuthState,
   handleOAuthCallback,
@@ -269,9 +269,19 @@ export default function App() {
     setSelectedMail(mail); setMailBody("");
     if (auth) {
       setMailBodyLoading(true);
-      try { setMailBody(await fetchMailBody(auth.accessToken, mail.id) || mail.summary); }
-      catch { setMailBody(mail.body || mail.summary || "본문을 불러오지 못했습니다."); }
-      finally { setMailBodyLoading(false); }
+      // 본문 로드 + 읽음 처리 병렬 실행
+      const [bodyResult] = await Promise.allSettled([
+        fetchMailBody(auth.accessToken, mail.id),
+        markAsRead(auth.accessToken, mail.id)
+          .then(() => setMails(current => current.filter(m => m.id !== mail.id)))
+          .catch(() => {/* 읽음 처리 실패는 무시 */})
+      ]);
+      setMailBodyLoading(false);
+      setMailBody(
+        bodyResult.status === "fulfilled"
+          ? (bodyResult.value || mail.summary)
+          : (mail.body || mail.summary || "본문을 불러오지 못했습니다.")
+      );
     } else {
       setMailBody(mail.body || mail.summary);
     }
