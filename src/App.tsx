@@ -857,7 +857,7 @@ export default function App() {
               <div className="empty-state"><div className="empty-icon">📋</div><p>작업이 없습니다.<br />회의록에서 액션을 추출해 보세요.</p></div>
             ) : (
               <div className="stack">
-                {tasks.map(task => (
+                {(showAllOpenTasks ? tasks : tasks.slice(0, 3)).map(task => (
                   <label className={`task-card ${task.done ? "done" : ""}`} key={task.id} style={{ cursor: "pointer" }}>
                     <input
                       type="checkbox"
@@ -871,6 +871,15 @@ export default function App() {
                     </div>
                   </label>
                 ))}
+                {tasks.length > 3 && (
+                  <button
+                    className="ghost"
+                    style={{ width: "100%", fontSize: 12, minHeight: 28 }}
+                    onClick={() => setShowAllOpenTasks(s => !s)}
+                  >
+                    {showAllOpenTasks ? "▲ 접기" : `▼ 외 ${tasks.length - 3}건 더 보기`}
+                  </button>
+                )}
               </div>
             ))}
           </article>
