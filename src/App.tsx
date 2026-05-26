@@ -500,8 +500,18 @@ export default function App() {
   const toggleApprovalCollapse = (id: string) =>
     setCollapsedApprovals(prev => ({ ...prev, [id]: !prev[id] }));
 
-  const toggleTask = (taskId: string) =>
-    setTasks(current => current.map(t => t.id === taskId ? { ...t, done: !t.done } : t));
+  const toggleTask = (taskId: string) => {
+    setTasks(current => current.map(t => {
+      if (t.id !== taskId) return t;
+      const next = { ...t, done: !t.done };
+      addLog({
+        action: next.done ? "task.completed" : "task.reopened",
+        detail: `"${t.title}" 를 ${next.done ? "완료" : "미완료"}로 변경했습니다.`,
+        status: next.done ? "success" : "pending"
+      });
+      return next;
+    }));
+  };
 
   const resetDemoState = () => {
     setTasks(initialTasks); setApprovals(initialApprovals); setLogs(initialLogs);
@@ -993,7 +1003,12 @@ export default function App() {
                   <button
                     className="ghost"
                     style={{ minHeight: 28, padding: "0 10px", fontSize: 12 }}
-                    onClick={() => { setTasks(c => c.filter(t => !t.done)); showToast("완료된 항목을 제거했습니다.", "info"); }}
+                    onClick={() => {
+                      const doneCount = tasks.filter(t => t.done).length;
+                      setTasks(c => c.filter(t => !t.done));
+                      showToast("완료된 항목을 제거했습니다.", "info");
+                      addLog({ action: "task.cleanup", detail: `완료된 작업 ${doneCount}건을 제거했습니다.`, status: "success" });
+                    }}
                     title="완료된 작업 제거"
                   >
                     🗑️ 완료 정리
