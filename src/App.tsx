@@ -1042,13 +1042,28 @@ export default function App() {
           {/* 처리 완료 항목 */}
           {processedApprovals.length > 0 && (
             <div style={{ marginTop: 12 }}>
-              <button
-                className="ghost"
-                style={{ width: "100%", fontSize: 12, minHeight: 32 }}
-                onClick={() => setShowProcessed(s => !s)}
-              >
-                {showProcessed ? "▲ 처리 완료 항목 숨기기" : `처리 완료 항목 ${processedApprovals.length}건 보기`}
-              </button>
+              <div style={{ display: "flex", gap: 8 }}>
+                <button
+                  className="ghost"
+                  style={{ flex: 1, fontSize: 12, minHeight: 32 }}
+                  onClick={() => setShowProcessed(s => !s)}
+                >
+                  {showProcessed ? "▲ 처리 완료 항목 숨기기" : `처리 완료 항목 ${processedApprovals.length}건 보기`}
+                </button>
+                <button
+                  className="ghost"
+                  style={{ fontSize: 12, minHeight: 32, padding: "0 14px", flexShrink: 0 }}
+                  onClick={() => {
+                    setApprovals(c => c.filter(a => a.status === "pending"));
+                    setShowProcessed(false);
+                    showToast("처리 완료 항목을 모두 삭제했습니다.", "info");
+                    addLog({ action: "approval.cleared", detail: `처리 완료 항목 ${processedApprovals.length}건을 삭제했습니다.`, status: "success" });
+                  }}
+                  title="처리 완료 항목 전체 삭제"
+                >
+                  🗑️ 전체 삭제
+                </button>
+              </div>
               {showProcessed && (
                 <div className="approval-list" style={{ marginTop: 8, opacity: 0.7 }}>
                   {processedApprovals.map(approval => (
