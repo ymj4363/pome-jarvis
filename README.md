@@ -32,10 +32,10 @@ pnpm build
 
 ### Automatic deployment
 
-This repository includes a GitHub Actions workflow at `.github/workflows/deploy-pages.yml`.
-Set these repository secrets before relying on automatic deployments:
+Use Cloudflare Pages Git integration:
 
-- `CLOUDFLARE_ACCOUNT_ID`
-- `CLOUDFLARE_API_TOKEN`
-
-The token needs Cloudflare Pages write access for the `pome-jarvis` project.
+- Repository: `ymj4363/pome-jarvis`
+- Production branch: `main`
+- Build command: `pnpm build`
+- Build output directory: `dist`
+- Root directory: leave empty
