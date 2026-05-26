@@ -135,6 +135,7 @@ export default function App() {
 
   // 할 일 직접 추가
   const [newTaskTitle, setNewTaskTitle] = useState("");
+  const [newTaskDue,   setNewTaskDue]   = useState("");
 
   const approvalRef = useRef<HTMLElement>(null);
 
@@ -538,12 +539,13 @@ export default function App() {
       id:     crypto.randomUUID(),
       title,
       owner:  auth?.user.name ?? "나",
-      due:    "미정",
+      due:    newTaskDue || "미정",
       source: "manual",
       done:   false
     };
     setTasks(current => [task, ...current]);
     setNewTaskTitle("");
+    setNewTaskDue("");
     addLog({ action: "task.added", detail: `"${title}" 할 일을 추가했습니다.`, status: "success" });
   };
 
@@ -904,6 +906,14 @@ export default function App() {
                 value={newTaskTitle}
                 onChange={e => setNewTaskTitle(e.target.value)}
                 onKeyDown={e => e.key === "Enter" && handleAddTask()}
+              />
+              <input
+                type="date"
+                className="task-add-date"
+                value={newTaskDue}
+                min={todayStr}
+                onChange={e => setNewTaskDue(e.target.value)}
+                title="마감일 (선택)"
               />
               <button
                 style={{ flexShrink: 0 }}
