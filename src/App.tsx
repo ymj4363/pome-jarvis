@@ -130,6 +130,9 @@ export default function App() {
   const [collapsedApprovals, setCollapsedApprovals] = useState<Record<string, boolean>>({});
   const [showProcessed, setShowProcessed] = useState(false);
 
+  // 실행 로그
+  const [showLog, setShowLog] = useState(true);
+
   const approvalRef = useRef<HTMLElement>(null);
 
   /* ── 파생 상태 ──────────────────────────────────────────────── */
@@ -1038,20 +1041,48 @@ export default function App() {
 
         {/* 실행 로그 */}
         <section className="panel" id="log">
-          <p className="eyebrow">실행 로그</p>
-          <h2>비서가 한 일을 기록합니다.</h2>
-          {logs.length === 0 ? (
-            <div className="empty-state"><div className="empty-icon">📋</div><p>아직 기록이 없습니다.</p></div>
-          ) : (
-            <div className="log-list">
-              {logs.map(log => (
-                <div className={`log-row ${log.status}`} key={log.id}>
-                  <time>{log.createdAt}</time>
-                  <strong>{log.action}</strong>
-                  <span>{log.detail}</span>
-                </div>
-              ))}
+          <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 8 }}>
+            <div>
+              <p className="eyebrow">실행 로그</p>
+              <h2>비서가 한 일을 기록합니다.</h2>
             </div>
+            <div style={{ display: "flex", gap: 6, flexShrink: 0, marginTop: 2 }}>
+              {logs.length > 0 && (
+                <button
+                  className="ghost"
+                  style={{ minHeight: 28, padding: "0 10px", fontSize: 12 }}
+                  onClick={() => {
+                    setLogs([]);
+                    showToast("로그를 모두 삭제했습니다.", "info");
+                  }}
+                >
+                  🗑️ 전체 삭제
+                </button>
+              )}
+              <button
+                className="ghost"
+                style={{ minHeight: 28, padding: "0 10px", fontSize: 12 }}
+                onClick={() => setShowLog(s => !s)}
+              >
+                {showLog ? "▲ 접기" : "▼ 펼치기"}
+              </button>
+            </div>
+          </div>
+
+          {showLog && (
+            logs.length === 0 ? (
+              <div className="empty-state"><div className="empty-icon">📋</div><p>아직 기록이 없습니다.</p></div>
+            ) : (
+              <div className="log-list">
+                {logs.map(log => (
+                  <div className={`log-row ${log.status}`} key={log.id}>
+                    <time>{log.createdAt}</time>
+                    <strong>{log.action}</strong>
+                    <span>{log.detail}</span>
+                  </div>
+                ))}
+              </div>
+            )
           )}
         </section>
       </main>
