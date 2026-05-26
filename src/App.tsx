@@ -100,10 +100,6 @@ export default function App() {
   /* ── Approval execution ─────────────────────────────────────── */
   const [executingApprovalId, setExecutingApprovalId] = useState<string | null>(null);
 
-  /* ── 서명 설정 ──────────────────────────────────────────────── */
-  const [gmailSignature, setGmailSignature]           = usePersistentState("pome.signature", "");
-  const [showSignatureSetting, setShowSignatureSetting] = useState(false);
-
   /* ── 일정 추가 폼 ───────────────────────────────────────────── */
   const [showEventForm, setShowEventForm] = useState(false);
   const todayStr = new Date().toISOString().split("T")[0];
@@ -366,7 +362,7 @@ export default function App() {
     setAssistantBusy("draft");
     try {
       const result   = await draftReply(mail);
-      const approval = createReplyDraftApproval(mail, result, gmailSignature);
+      const approval = createReplyDraftApproval(mail, result);
       setApprovals(current => [approval, ...current]);
       addLog({ action: "assistant.draft_reply", detail: `${mail.subject} 답장 초안 생성.`, status: "pending" });
       showToast("답장 초안을 승인 대기함에 추가했습니다.", "success");
@@ -581,14 +577,6 @@ export default function App() {
               <button className="icon-button" onClick={handleRefreshData} disabled={dataLoading}>
                 {dataLoading ? <span className="spinner" /> : "🔄"} 새로고침
               </button>
-              <div className="signature-setting">
-                <button className="signature-toggle" onClick={() => setShowSignatureSetting(s => !s)}>
-                  ✍️ 이메일 서명 {showSignatureSetting ? "▲" : "▼"}
-                </button>
-                {showSignatureSetting && (
-                  <textarea className="signature-input" placeholder={"홍길동 | 개발팀\njane@example.com\n010-0000-0000"} value={gmailSignature} onChange={e => setGmailSignature(e.target.value)} rows={3} />
-                )}
-              </div>
               <button className="reset-button" onClick={handleLogout}>로그아웃</button>
             </>
           ) : (
@@ -601,14 +589,6 @@ export default function App() {
                   <GoogleIcon /> 구글 계정 연동
                 </button>
               )}
-              <div className="signature-setting">
-                <button className="signature-toggle" onClick={() => setShowSignatureSetting(s => !s)}>
-                  ✍️ 이메일 서명 {showSignatureSetting ? "▲" : "▼"}
-                </button>
-                {showSignatureSetting && (
-                  <textarea className="signature-input" placeholder={"홍길동 | 개발팀\njane@example.com\n010-0000-0000"} value={gmailSignature} onChange={e => setGmailSignature(e.target.value)} rows={3} />
-                )}
-              </div>
               <button className="reset-button" onClick={resetDemoState}>🔄 데모 초기화</button>
             </>
           )}

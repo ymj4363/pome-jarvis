@@ -8,13 +8,10 @@ function extractEmail(sender: string): string {
 }
 
 export function createReplyDraftApproval(
-  mail:      Mail,
-  result:    DraftReplyResult,
-  signature?: string
+  mail:   Mail,
+  result: DraftReplyResult
 ): Approval {
-  const draftText = signature?.trim()
-    ? `${result.draft}\n\n--\n${signature.trim()}`
-    : result.draft;
+  const draftText = result.draft;
 
   return {
     id:           makeId("approval"),
