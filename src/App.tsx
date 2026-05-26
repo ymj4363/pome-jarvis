@@ -76,7 +76,7 @@ export default function App() {
   const [approvals, setApprovals] = usePersistentState<Approval[]>("pome.approvals", initialApprovals);
   const [logs, setLogs]           = usePersistentState<LogEntry[]>("pome.logs", initialLogs);
   const [meetingText, setMeetingText] = usePersistentState("pome.meetingText", defaultMeetingText);
-  const [draftMailId, setDraftMailId] = usePersistentState("pome.draftMailId", initialMails[1]?.id ?? "");
+  const [draftMailId, setDraftMailId] = usePersistentState("pome.draftMailId", "");
 
   const [assistantBusy, setAssistantBusy] = useState<"draft" | "meeting" | null>(null);
   const [auth, setAuth]               = useState<AuthState | null>(null);
@@ -895,9 +895,10 @@ export default function App() {
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
               <div className="draft-control">
                 <select value={draftMailId} onChange={e => setDraftMailId(e.target.value)}>
+                  <option value="">— 답장할 메일 선택 —</option>
                   {mails.map(mail => <option key={mail.id} value={mail.id}>{mail.subject}</option>)}
                 </select>
-                <button disabled={assistantBusy === "draft"} onClick={createReplyDraft}>
+                <button disabled={assistantBusy === "draft" || !draftMailId} onClick={createReplyDraft}>
                   {assistantBusy === "draft" ? <><span className="spinner" />초안 생성 중</> : <>✉️ 답장 초안 만들기</>}
                 </button>
               </div>
