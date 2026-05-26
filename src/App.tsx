@@ -95,6 +95,10 @@ export default function App() {
   // Approval execution
   const [executingApprovalId, setExecutingApprovalId] = useState<string | null>(null);
 
+  // 이메일 서명
+  const [gmailSignature, setGmailSignature] = usePersistentState("pome.signature", "");
+  const [showSignatureSetting, setShowSignatureSetting] = useState(false);
+
   const approvalRef = useRef<HTMLElement>(null);
 
   /* ── 파생 상태 ──────────────────────────────────────────────── */
@@ -304,7 +308,7 @@ export default function App() {
     setAssistantBusy("draft");
     try {
       const result   = await draftReply(mail);
-      const approval = createReplyDraftApproval(mail, result);
+      const approval = createReplyDraftApproval(mail, result, gmailSignature);
       setApprovals(current => [approval, ...current]);
       addLog({
         action: "assistant.draft_reply",
@@ -400,6 +404,12 @@ export default function App() {
     }
   };
 
+  const updateApprovalDraft = (approvalId: string, newDraft: string) => {
+    setApprovals(current =>
+      current.map(a => a.id === approvalId ? { ...a, draft: newDraft } : a)
+    );
+  };
+
   const toggleTask = (taskId: string) => {
     setTasks(current =>
       current.map(t => (t.id === taskId ? { ...t, done: !t.done } : t))
@@ -473,6 +483,26 @@ export default function App() {
               >
                 {dataLoading ? <span className="spinner" /> : "🔄"} 새로고침
               </button>
+
+              {/* 서명 설정 */}
+              <div className="signature-setting">
+                <button
+                  className="signature-toggle"
+                  onClick={() => setShowSignatureSetting(s => !s)}
+                >
+                  ✍️ 이메일 서명 {showSignatureSetting ? "▲" : "▼"}
+                </button>
+                {showSignatureSetting && (
+                  <textarea
+                    className="signature-input"
+                    placeholder={"홍길동 | 개발팀\njane@example.com\n010-0000-0000"}
+                    value={gmailSignature}
+                    onChange={e => setGmailSignature(e.target.value)}
+                    rows={3}
+                  />
+                )}
+              </div>
+
               <button className="reset-button" onClick={handleLogout}>로그아웃</button>
             </>
           ) : (
@@ -488,6 +518,26 @@ export default function App() {
                   구글 계정 연동
                 </button>
               )}
+
+              {/* 서명 설정 (데모 모드에서도 편집 가능) */}
+              <div className="signature-setting">
+                <button
+                  className="signature-toggle"
+                  onClick={() => setShowSignatureSetting(s => !s)}
+                >
+                  ✍️ 이메일 서명 {showSignatureSetting ? "▲" : "▼"}
+                </button>
+                {showSignatureSetting && (
+                  <textarea
+                    className="signature-input"
+                    placeholder={"홍길동 | 개발팀\njane@example.com\n010-0000-0000"}
+                    value={gmailSignature}
+                    onChange={e => setGmailSignature(e.target.value)}
+                    rows={3}
+                  />
+                )}
+              </div>
+
               <button className="reset-button" onClick={resetDemoState}>🔄 데모 초기화</button>
             </>
           )}
@@ -814,7 +864,18 @@ export default function App() {
                       </p>
                     )}
                     {approval.draft && (
-                      <pre className="draft-preview">{approval.draft}</pre>
+                      approval.status === "pending" ? (
+                        <div className="draft-edit-wrapper">
+                          <span className="draft-edit-label">✏️ 발송 전 내용을 직접 수정할 수 있습니다</span>
+                          <textarea
+                            className="draft-preview draft-editable"
+                            value={approval.draft}
+                            onChange={e => updateApprovalDraft(approval.id, e.target.value)}
+                          />
+                        </div>
+                      ) : (
+                        <pre className="draft-preview">{approval.draft}</pre>
+                      )
                     )}
                     {approval.evidence && approval.evidence.length > 0 && (
                       <ul className="evidence-list">

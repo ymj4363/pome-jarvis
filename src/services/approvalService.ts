@@ -7,13 +7,21 @@ function extractEmail(sender: string): string {
   return match ? match[1].trim() : sender.trim();
 }
 
-export function createReplyDraftApproval(mail: Mail, result: DraftReplyResult): Approval {
+export function createReplyDraftApproval(
+  mail:      Mail,
+  result:    DraftReplyResult,
+  signature?: string
+): Approval {
+  const draftText = signature?.trim()
+    ? `${result.draft}\n\n--\n${signature.trim()}`
+    : result.draft;
+
   return {
     id:           makeId("approval"),
     type:         "email_send",
     title:        `${mail.subject} 회신 초안`,
     description:  `${mail.sender}에게 보낼 답장 초안입니다. 승인하면 Gmail을 통해 실제로 발송됩니다.`,
-    draft:        result.draft,
+    draft:        draftText,
     evidence:     result.evidence,
     risk:         mail.label === "urgent" ? "high" : "medium",
     createdAt:    "방금 전",
