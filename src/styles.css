@@ -1434,3 +1434,46 @@ textarea {
 @media (max-width: 860px) {
   .sidebar-meeting { display: none; }
 }
+
+/* ── Section Accent Colors ──────────────────────────────────────── */
+
+/* 오늘 일정 패널 — 보라 */
+.panel-calendar {
+  border-top: 3px solid #7c3aed;
+}
+.panel-calendar > h2::before {
+  content: "";
+}
+
+/* AI 브리핑 패널 — 브랜드 블루 */
+.panel-briefing {
+  border-top: 3px solid var(--brand);
+}
+
+/* 이메일 섹션 — 브랜드 블루 */
+.section-mail {
+  border-top: 3px solid var(--brand);
+  background: linear-gradient(180deg, #f0f6ff 0px, var(--white) 72px);
+}
+.section-mail .eyebrow { color: var(--brand); font-weight: 600; }
+
+/* 할 일 섹션 — 그린 */
+.section-tasks {
+  border-top: 3px solid var(--success);
+  background: linear-gradient(180deg, #f0faf4 0px, var(--white) 72px);
+}
+.section-tasks .eyebrow { color: var(--success); font-weight: 600; }
+
+/* 승인 대기함 — 앰버 */
+.section-approval {
+  border-top: 3px solid #d97706;
+  background: linear-gradient(180deg, #fffbf0 0px, var(--white) 72px);
+}
+.section-approval .eyebrow { color: #d97706; font-weight: 600; }
+
+/* 실행 로그 — 중성 그레이 */
+.section-log {
+  border-top: 3px solid var(--ink-4);
+  background: linear-gradient(180deg, #f7f8fa 0px, var(--white) 60px);
+}
+.section-log .eyebrow { color: var(--ink-5); font-weight: 600; }

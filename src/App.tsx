@@ -133,6 +133,10 @@ export default function App() {
   // 실행 로그
   const [showLog, setShowLog] = useState(true);
 
+  // 섹션 접기/펼치기
+  const [showMails, setShowMails] = useState(true);
+  const [showTasks, setShowTasks] = useState(true);
+
   const approvalRef = useRef<HTMLElement>(null);
 
   /* ── 파생 상태 ──────────────────────────────────────────────── */
@@ -696,11 +700,11 @@ export default function App() {
           </div>
         </header>
 
-        {/* 3-column 요약 */}
-        <section className="grid three">
+        {/* 2-column 요약 */}
+        <section className="grid two">
 
           {/* 오늘 일정 + 추가 폼 */}
-          <article className="panel">
+          <article className="panel panel-calendar">
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
               <h2>오늘 일정</h2>
               <button
@@ -757,7 +761,7 @@ export default function App() {
           </article>
 
           {/* AI 브리핑 / 추천 액션 */}
-          <article className="panel">
+          <article className="panel panel-briefing">
             <h2 style={{ display: "flex", alignItems: "center", gap: 8 }}>
               {briefing ? "AI 브리핑" : "추천 액션"}
               {briefingLoading && <span className="spinner" style={{ borderColor: "rgba(0,0,0,.12)", borderTopColor: "var(--brand)", width: 13, height: 13 }} />}
@@ -792,53 +796,35 @@ export default function App() {
             )}
           </article>
 
-          {/* 열린 할 일 */}
-          <article className="panel">
-            <h2>열린 할 일</h2>
-            {openTasks.length === 0 ? (
-              <div className="empty-state"><div className="empty-icon">🎉</div><p>모든 할 일을 완료했습니다!</p></div>
-            ) : (
-              <div className="stack">
-                {(showAllOpenTasks ? openTasks : openTasks.slice(0, 4)).map(task => (
-                  <label className="task-row" key={task.id}>
-                    <input type="checkbox" checked={task.done} onChange={() => toggleTask(task.id)} />
-                    <span>{task.title}</span>
-                  </label>
-                ))}
-                {openTasks.length > 4 && (
-                  <button
-                    className="ghost"
-                    style={{ width: "100%", fontSize: 12, minHeight: 28 }}
-                    onClick={() => setShowAllOpenTasks(s => !s)}
-                  >
-                    {showAllOpenTasks
-                      ? "▲ 접기"
-                      : `외 ${openTasks.length - 4}건 더 보기`}
-                  </button>
-                )}
-              </div>
-            )}
-          </article>
         </section>
 
         {/* 이메일 요약 */}
-        <section className="panel" id="mail">
+        <section className="panel section-mail" id="mail">
           <div className="section-head">
             <div>
               <p className="eyebrow">이메일 요약</p>
               <h2>{auth ? "Gmail 메일함" : "중요도와 다음 액션을 분류했습니다."}</h2>
             </div>
-            <div className="draft-control">
-              <select value={draftMailId} onChange={e => setDraftMailId(e.target.value)}>
-                {mails.map(mail => <option key={mail.id} value={mail.id}>{mail.subject}</option>)}
-              </select>
-              <button disabled={assistantBusy === "draft"} onClick={createReplyDraft}>
-                {assistantBusy === "draft" ? <><span className="spinner" />초안 생성 중</> : <>✉️ 답장 초안 만들기</>}
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <div className="draft-control">
+                <select value={draftMailId} onChange={e => setDraftMailId(e.target.value)}>
+                  {mails.map(mail => <option key={mail.id} value={mail.id}>{mail.subject}</option>)}
+                </select>
+                <button disabled={assistantBusy === "draft"} onClick={createReplyDraft}>
+                  {assistantBusy === "draft" ? <><span className="spinner" />초안 생성 중</> : <>✉️ 답장 초안 만들기</>}
+                </button>
+              </div>
+              <button
+                className="ghost"
+                style={{ minHeight: 28, padding: "0 10px", fontSize: 12, flexShrink: 0 }}
+                onClick={() => setShowMails(s => !s)}
+              >
+                {showMails ? "▲ 접기" : "▼ 펼치기"}
               </button>
             </div>
           </div>
 
-          {mails.length === 0 ? (
+          {showMails && (mails.length === 0 ? (
             <div className="empty-state"><div className="empty-icon">📭</div><p>받은 메일이 없습니다.</p></div>
           ) : (
             <>
@@ -878,7 +864,7 @@ export default function App() {
                 </div>
               )}
             </>
-          )}
+          ))}
         </section>
 
         {/* 회의록 액션 */}
@@ -996,13 +982,37 @@ export default function App() {
             </div>
           </article>
 
-          <article className="panel">
-            <h2>작업 목록</h2>
-            {tasks.length === 0 ? (
+          <article className="panel section-tasks">
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
+              <div>
+                <p className="eyebrow">할 일 관리</p>
+                <h2>할 일 목록</h2>
+              </div>
+              <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
+                {tasks.some(t => t.done) && (
+                  <button
+                    className="ghost"
+                    style={{ minHeight: 28, padding: "0 10px", fontSize: 12 }}
+                    onClick={() => { setTasks(c => c.filter(t => !t.done)); showToast("완료된 항목을 제거했습니다.", "info"); }}
+                    title="완료된 작업 제거"
+                  >
+                    🗑️ 완료 정리
+                  </button>
+                )}
+                <button
+                  className="ghost"
+                  style={{ minHeight: 28, padding: "0 10px", fontSize: 12 }}
+                  onClick={() => setShowTasks(s => !s)}
+                >
+                  {showTasks ? "▲ 접기" : "▼ 펼치기"}
+                </button>
+              </div>
+            </div>
+            {showTasks && (tasks.length === 0 ? (
               <div className="empty-state"><div className="empty-icon">📋</div><p>작업이 없습니다.<br />회의록에서 액션을 추출해 보세요.</p></div>
             ) : (
               <div className="stack">
-                {tasks.slice(0, 7).map(task => (
+                {tasks.map(task => (
                   <div className={`task-card ${task.done ? "done" : ""}`} key={task.id}>
                     <button
                       className={task.done ? "ghost" : ""}
@@ -1017,14 +1027,13 @@ export default function App() {
                     </div>
                   </div>
                 ))}
-                {tasks.length > 7 && <p style={{ fontSize: 12, color: "var(--ink-5)", textAlign: "center", margin: 0 }}>외 {tasks.length - 7}건 더</p>}
               </div>
-            )}
+            ))}
           </article>
         </section>
 
         {/* 승인 대기함 */}
-        <section className="panel" id="approval" ref={approvalRef as React.Ref<HTMLElement>}>
+        <section className="panel section-approval" id="approval" ref={approvalRef as React.Ref<HTMLElement>}>
           <div className="section-head">
             <div>
               <p className="eyebrow">승인 대기함</p>
@@ -1141,7 +1150,7 @@ export default function App() {
         </section>
 
         {/* 실행 로그 */}
-        <section className="panel" id="log">
+        <section className="panel section-log" id="log">
           <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 8 }}>
             <div>
               <p className="eyebrow">실행 로그</p>
