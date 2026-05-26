@@ -52,8 +52,8 @@ Recommended MVP values:
 |---|---|
 | `ANTHROPIC_API_KEY` | Your Anthropic API key |
 | `ANTHROPIC_MODEL` | `claude-3-5-haiku-latest` |
-| `ANTHROPIC_DRAFT_MODEL` | `claude-sonnet-4-20250514` |
-| `ANTHROPIC_MEETING_MODEL` | `claude-sonnet-4-20250514` |
+| `ANTHROPIC_DRAFT_MODEL` | `claude-sonnet-4-6` |
+| `ANTHROPIC_MEETING_MODEL` | `claude-sonnet-4-6` |
 
 Cloudflare input path:
 
