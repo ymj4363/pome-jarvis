@@ -100,7 +100,7 @@ export async function onRequestGet({
   // pageToken (더 보기 페이지네이션)
   const reqUrl    = new URL(request.url);
   const pageToken = reqUrl.searchParams.get("pageToken");
-  const listPath  = `/messages?maxResults=10&labelIds=INBOX${pageToken ? `&pageToken=${encodeURIComponent(pageToken)}` : ""}`;
+  const listPath  = `/messages?maxResults=10&labelIds=INBOX&labelIds=UNREAD${pageToken ? `&pageToken=${encodeURIComponent(pageToken)}` : ""}`;
 
   // 1. 받은편지함 목록 조회 (최근 10건)
   const listRes = await gmailFetch(listPath, accessToken);
