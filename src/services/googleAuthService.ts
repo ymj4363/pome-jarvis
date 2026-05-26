@@ -97,15 +97,15 @@ export async function handleOAuthCallback(code: string, state: string): Promise<
     throw new Error("OAuth state mismatch — possible CSRF");
   }
 
-  // Authorization Code → Access Token
-  const tokenRes = await fetch("https://oauth2.googleapis.com/token", {
+  // Authorization Code → Access Token (server-side via Cloudflare Function)
+  // client_secret은 서버에만 보관 — 브라우저에 노출 안 됨
+  const tokenRes = await fetch("/api/auth/token", {
     method: "POST",
-    headers: { "content-type": "application/x-www-form-urlencoded" },
-    body: new URLSearchParams({
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({
       client_id:     CLIENT_ID,
       code,
       code_verifier: verifier,
-      grant_type:    "authorization_code",
       redirect_uri:  window.location.origin
     })
   });
