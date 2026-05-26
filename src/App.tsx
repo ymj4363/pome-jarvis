@@ -1011,10 +1011,11 @@ export default function App() {
               <button
                 className="ghost"
                 style={{ minHeight: 28, padding: "0 10px", fontSize: 12, flexShrink: 0 }}
-                onClick={() => setMails([])}
-                title="화면에서 목록 지우기 (실제 메일 삭제 아님)"
+                onClick={() => auth ? handleRefreshData() : setMails([])}
+                title={auth ? "Gmail에서 안 읽은 메일 다시 불러오기" : "목록 지우기"}
+                disabled={dataLoading}
               >
-                🔄 초기화
+                {dataLoading ? <span className="spinner" /> : "🔄"} 동기화
               </button>
               <button
                 className="ghost"
