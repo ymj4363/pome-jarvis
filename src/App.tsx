@@ -1010,6 +1010,14 @@ export default function App() {
               <button
                 className="ghost"
                 style={{ minHeight: 28, padding: "0 10px", fontSize: 12, flexShrink: 0 }}
+                onClick={() => setMails([])}
+                title="화면에서 목록 지우기 (실제 메일 삭제 아님)"
+              >
+                🔄 초기화
+              </button>
+              <button
+                className="ghost"
+                style={{ minHeight: 28, padding: "0 10px", fontSize: 12, flexShrink: 0 }}
                 onClick={() => setShowMails(s => !s)}
               >
                 {showMails ? "▲ 접기" : "▼ 펼치기"}
