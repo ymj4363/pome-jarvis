@@ -126,12 +126,17 @@ export default function App() {
   // 열린 할 일 전체 보기
   const [showAllOpenTasks, setShowAllOpenTasks] = useState(false);
 
+  // 승인 대기함 접기/펼치기 + 처리 완료 토글
+  const [collapsedApprovals, setCollapsedApprovals] = useState<Record<string, boolean>>({});
+  const [showProcessed, setShowProcessed] = useState(false);
+
   const approvalRef = useRef<HTMLElement>(null);
 
   /* ── 파생 상태 ──────────────────────────────────────────────── */
-  const unreadImportant  = useMemo(() => mails.filter(m => m.label !== "reference"), [mails]);
-  const pendingApprovals = approvals.filter(a => a.status === "pending");
-  const openTasks        = tasks.filter(t => !t.done);
+  const unreadImportant    = useMemo(() => mails.filter(m => m.label !== "reference"), [mails]);
+  const pendingApprovals   = approvals.filter(a => a.status === "pending");
+  const processedApprovals = approvals.filter(a => a.status !== "pending");
+  const openTasks          = tasks.filter(t => !t.done);
 
   /* ── Toast ──────────────────────────────────────────────────── */
   const showToast = useCallback((message: string, type: Toast["type"] = "info") => {
@@ -484,6 +489,9 @@ export default function App() {
 
   const updateApprovalDraft = (approvalId: string, newDraft: string) =>
     setApprovals(current => current.map(a => a.id === approvalId ? { ...a, draft: newDraft } : a));
+
+  const toggleApprovalCollapse = (id: string) =>
+    setCollapsedApprovals(prev => ({ ...prev, [id]: !prev[id] }));
 
   const toggleTask = (taskId: string) =>
     setTasks(current => current.map(t => t.id === taskId ? { ...t, done: !t.done } : t));
@@ -921,51 +929,109 @@ export default function App() {
             {pendingApprovals.length > 0 && <span className="counter">{pendingApprovals.length} 대기</span>}
           </div>
 
-          {approvals.length === 0 ? (
-            <div className="empty-state"><div className="empty-icon">✅</div><p>대기 중인 승인 항목이 없습니다.</p></div>
+          {/* 대기 중 항목 */}
+          {pendingApprovals.length === 0 ? (
+            <div className="empty-state">
+              <div className="empty-icon">✅</div>
+              <p>{processedApprovals.length > 0 ? "모든 항목이 처리되었습니다." : "대기 중인 승인 항목이 없습니다."}</p>
+            </div>
           ) : (
             <div className="approval-list">
-              {approvals.map(approval => (
-                <article className={`approval-card ${approval.status}`} key={approval.id}>
-                  <div>
-                    <div className="mail-topline">
-                      <span className={`pill risk-${approval.risk}`}>{RISK_TEXT[approval.risk]}</span>
-                      <span style={{ fontSize: 12, color: "var(--ink-5)" }}>{approval.type}</span>
-                    </div>
-                    <h3>{approval.title}</h3>
-                    <p>{approval.description}</p>
-                    {approval.recipientEmail && approval.status === "pending" && (
-                      <p style={{ fontSize: 12, color: "var(--brand)", marginTop: 4 }}>📧 수신자: {approval.recipientEmail}</p>
-                    )}
-                    {approval.draft && (
-                      approval.status === "pending" ? (
-                        <div className="draft-edit-wrapper">
-                          <span className="draft-edit-label">✏️ 발송 전 내용을 직접 수정할 수 있습니다</span>
-                          <textarea
-                            className="draft-preview draft-editable"
-                            value={approval.draft}
-                            onChange={e => updateApprovalDraft(approval.id, e.target.value)}
-                          />
+              {pendingApprovals.map(approval => {
+                const isCollapsed = collapsedApprovals[approval.id] ?? false;
+                return (
+                  <article className="approval-card pending" key={approval.id}>
+                    <div>
+                      <div className="mail-topline">
+                        <span className={`pill risk-${approval.risk}`}>{RISK_TEXT[approval.risk]}</span>
+                        <div style={{ display: "flex", alignItems: "center", gap: 8, marginLeft: "auto" }}>
+                          <span style={{ fontSize: 11, color: "var(--ink-5)" }}>{approval.type}</span>
+                          <button
+                            className="ghost"
+                            style={{ minHeight: 22, padding: "0 8px", fontSize: 11 }}
+                            onClick={() => toggleApprovalCollapse(approval.id)}
+                          >
+                            {isCollapsed ? "▼ 펼치기" : "▲ 접기"}
+                          </button>
                         </div>
-                      ) : <pre className="draft-preview">{approval.draft}</pre>
-                    )}
-                    {approval.evidence && approval.evidence.length > 0 && (
-                      <ul className="evidence-list">{approval.evidence.map(item => <li key={item}>{item}</li>)}</ul>
-                    )}
-                    <small>
-                      {approval.createdAt} · {approval.status === "pending" && "대기 중"}{approval.status === "approved" && "✅ 승인됨"}{approval.status === "rejected" && "✕ 거절됨"}
-                    </small>
-                  </div>
-                  {approval.status === "pending" && (
+                      </div>
+                      <h3>{approval.title}</h3>
+
+                      {!isCollapsed && (
+                        <>
+                          <p>{approval.description}</p>
+                          {approval.recipientEmail && (
+                            <p style={{ fontSize: 12, color: "var(--brand)", marginTop: 4 }}>📧 수신자: {approval.recipientEmail}</p>
+                          )}
+                          {approval.draft && (
+                            <div className="draft-edit-wrapper">
+                              <span className="draft-edit-label">✏️ 발송 전 내용을 직접 수정할 수 있습니다</span>
+                              <textarea
+                                className="draft-preview draft-editable"
+                                value={approval.draft}
+                                onChange={e => updateApprovalDraft(approval.id, e.target.value)}
+                              />
+                            </div>
+                          )}
+                          {approval.evidence && approval.evidence.length > 0 && (
+                            <ul className="evidence-list">
+                              {approval.evidence.map(item => <li key={item}>{item}</li>)}
+                            </ul>
+                          )}
+                        </>
+                      )}
+                      <small style={{ marginTop: 8, display: "block" }}>{approval.createdAt} · 대기 중</small>
+                    </div>
+
                     <div className="approval-actions">
-                      <button disabled={executingApprovalId === approval.id} onClick={() => decideApproval(approval.id, "approved")}>
+                      <button
+                        disabled={executingApprovalId === approval.id}
+                        onClick={() => decideApproval(approval.id, "approved")}
+                      >
                         {executingApprovalId === approval.id ? <><span className="spinner" />실행 중</> : "✅ 승인"}
                       </button>
-                      <button className="ghost" disabled={executingApprovalId === approval.id} onClick={() => decideApproval(approval.id, "rejected")}>✕ 거절</button>
+                      <button
+                        className="ghost"
+                        disabled={executingApprovalId === approval.id}
+                        onClick={() => decideApproval(approval.id, "rejected")}
+                      >
+                        ✕ 거절
+                      </button>
                     </div>
-                  )}
-                </article>
-              ))}
+                  </article>
+                );
+              })}
+            </div>
+          )}
+
+          {/* 처리 완료 항목 */}
+          {processedApprovals.length > 0 && (
+            <div style={{ marginTop: 12 }}>
+              <button
+                className="ghost"
+                style={{ width: "100%", fontSize: 12, minHeight: 32 }}
+                onClick={() => setShowProcessed(s => !s)}
+              >
+                {showProcessed ? "▲ 처리 완료 항목 숨기기" : `처리 완료 항목 ${processedApprovals.length}건 보기`}
+              </button>
+              {showProcessed && (
+                <div className="approval-list" style={{ marginTop: 8, opacity: 0.7 }}>
+                  {processedApprovals.map(approval => (
+                    <article className={`approval-card ${approval.status}`} key={approval.id}>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div className="mail-topline">
+                          <span className={`pill risk-${approval.risk}`}>{RISK_TEXT[approval.risk]}</span>
+                          <span style={{ fontSize: 11, color: "var(--ink-5)" }}>{approval.type}</span>
+                        </div>
+                        <h3>{approval.title}</h3>
+                        <small style={{ marginTop: 6, display: "block" }}>
+                          {approval.createdAt} · {approval.status === "approved" ? "✅ 승인됨" : "✕ 거절됨"}
+                        </small>
+                      </div>
+                    </article>
+                  ))}
+                </div>
+              )}
             </div>
           )}
         </section>
