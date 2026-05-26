@@ -1,12 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import {
-  defaultMeetingText,
-  initialApprovals,
-  initialEvents,
-  initialLogs,
-  initialMails,
-  initialTasks
-} from "./data";
+import { initialEvents, initialMails } from "./data";
 import { createReplyDraftApproval, decideApproval as decideApprovalState } from "./services/approvalService";
 import { draftReply, extractMeetingActions, fetchBriefing } from "./services/assistantService";
 import { createCalendarEvent, deleteCalendarEvent, fetchCalendarEvents } from "./services/calendarService";
@@ -72,10 +65,10 @@ export default function App() {
   /* ── Core state ─────────────────────────────────────────────── */
   const [mails, setMails]   = useState<Mail[]>(initialMails);
   const [events, setEvents] = useState<CalendarEvent[]>(initialEvents);
-  const [tasks, setTasks]         = usePersistentState<Task[]>("pome.tasks", initialTasks);
-  const [approvals, setApprovals] = usePersistentState<Approval[]>("pome.approvals", initialApprovals);
-  const [logs, setLogs]           = usePersistentState<LogEntry[]>("pome.logs", initialLogs);
-  const [meetingText, setMeetingText] = usePersistentState("pome.meetingText", defaultMeetingText);
+  const [tasks, setTasks]         = usePersistentState<Task[]>("pome.tasks", []);
+  const [approvals, setApprovals] = usePersistentState<Approval[]>("pome.approvals", []);
+  const [logs, setLogs]           = usePersistentState<LogEntry[]>("pome.logs", []);
+  const [meetingText, setMeetingText] = usePersistentState("pome.meetingText", "");
   const [draftMailId, setDraftMailId] = usePersistentState("pome.draftMailId", "");
 
   const [assistantBusy, setAssistantBusy] = useState<"draft" | "meeting" | null>(null);
@@ -222,10 +215,6 @@ export default function App() {
         .then(newAuth => {
           setAuth(newAuth);
           resetMeeting();
-          // 데모 데이터 전체 삭제 — 실제 데이터로 새로 시작
-          setTasks([]);
-          setApprovals([]);
-          setLogs([]);
           return loadRealData(newAuth.accessToken, newAuth.user.name);
         })
         .catch(() => showToast("구글 로그인에 실패했습니다. 다시 시도해 주세요.", "error"));
@@ -570,11 +559,11 @@ export default function App() {
     }));
   };
 
-  const resetDemoState = () => {
-    setTasks(initialTasks); setApprovals(initialApprovals); setLogs(initialLogs);
-    setMeetingText(defaultMeetingText); setDraftMailId(initialMails[1]?.id ?? "");
+  const resetAllData = () => {
+    setTasks([]); setApprovals([]); setLogs([]);
+    setMeetingText(""); setDraftMailId("");
     if (!auth) { setMails(initialMails); setEvents(initialEvents); }
-    showToast("데모 상태를 초기화했습니다.", "info");
+    showToast("데이터를 초기화했습니다.", "info");
   };
 
   /* ── Render ─────────────────────────────────────────────────── */
@@ -626,7 +615,7 @@ export default function App() {
                   <GoogleIcon /> 구글 계정 연동
                 </button>
               )}
-              <button className="reset-button" onClick={resetDemoState}>🔄 데모 초기화</button>
+              <button className="reset-button" onClick={resetAllData}>🔄 초기화</button>
             </>
           )}
         </div>
