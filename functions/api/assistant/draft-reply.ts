@@ -1,5 +1,6 @@
 type Env = {
-  OPENAI_API_KEY?: string;
+  ANTHROPIC_API_KEY?: string;
+  ANTHROPIC_MODEL?: string;
 };
 
 type DraftReplyRequest = {
@@ -12,9 +13,15 @@ type DraftReplyRequest = {
   };
 };
 
+type AnthropicMessageResponse = {
+  content: Array<{ type: string; text?: string }>;
+};
+
 const jsonHeaders = {
   "content-type": "application/json; charset=utf-8"
 };
+
+const defaultModel = "claude-3-5-haiku-latest";
 
 function fallbackDraft(input: DraftReplyRequest) {
   const { mail } = input;
@@ -46,54 +53,47 @@ async function parseJson<T>(request: Request): Promise<T | null> {
   }
 }
 
-async function callOpenAI(apiKey: string, input: DraftReplyRequest) {
-  const response = await fetch("https://api.openai.com/v1/responses", {
+function extractText(data: AnthropicMessageResponse) {
+  return data.content
+    .filter(item => item.type === "text" && item.text)
+    .map(item => item.text)
+    .join("\n")
+    .trim();
+}
+
+async function callClaude(apiKey: string, model: string, input: DraftReplyRequest) {
+  const response = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
     headers: {
-      authorization: `Bearer ${apiKey}`,
+      "x-api-key": apiKey,
+      "anthropic-version": "2023-06-01",
       "content-type": "application/json"
     },
     body: JSON.stringify({
-      model: "gpt-4.1-mini",
-      input: [
-        {
-          role: "system",
-          content:
-            "너는 승인형 개인 운영비서다. 메일을 실제 발송하지 말고, 사용자가 검토할 수 있는 한국어 답장 초안과 근거를 JSON으로 작성한다."
-        },
+      model,
+      max_tokens: 1200,
+      system:
+        "너는 승인형 개인 운영비서다. 메일을 실제 발송하지 말고, 사용자가 검토할 수 있는 한국어 답장 초안과 근거를 JSON으로만 작성한다.",
+      messages: [
         {
           role: "user",
-          content: JSON.stringify(input.mail)
+          content: [
+            "다음 메일에 대한 답장 초안을 작성해줘.",
+            "반드시 아래 JSON 형식만 반환해.",
+            '{"draft":"답장 초안","evidence":["근거 1","근거 2"]}',
+            JSON.stringify(input.mail)
+          ].join("\n\n")
         }
-      ],
-      text: {
-        format: {
-          type: "json_schema",
-          name: "draft_reply",
-          schema: {
-            type: "object",
-            additionalProperties: false,
-            properties: {
-              draft: { type: "string" },
-              evidence: {
-                type: "array",
-                items: { type: "string" }
-              }
-            },
-            required: ["draft", "evidence"]
-          },
-          strict: true
-        }
-      }
+      ]
     })
   });
 
   if (!response.ok) {
-    throw new Error(`OpenAI request failed: ${response.status}`);
+    throw new Error(`Claude request failed: ${response.status}`);
   }
 
-  const data = await response.json() as { output_text?: string };
-  const parsed = JSON.parse(data.output_text ?? "{}") as {
+  const data = await response.json() as AnthropicMessageResponse;
+  const parsed = JSON.parse(extractText(data)) as {
     draft?: string;
     evidence?: string[];
   };
@@ -101,7 +101,7 @@ async function callOpenAI(apiKey: string, input: DraftReplyRequest) {
   return {
     draft: parsed.draft ?? "",
     evidence: parsed.evidence ?? [],
-    source: "openai"
+    source: "claude"
   };
 }
 
@@ -114,12 +114,12 @@ export async function onRequestPost({ request, env }: { request: Request; env: E
     });
   }
 
-  if (!env.OPENAI_API_KEY) {
+  if (!env.ANTHROPIC_API_KEY) {
     return new Response(JSON.stringify(fallbackDraft(input)), { headers: jsonHeaders });
   }
 
   try {
-    const result = await callOpenAI(env.OPENAI_API_KEY, input);
+    const result = await callClaude(env.ANTHROPIC_API_KEY, env.ANTHROPIC_MODEL ?? defaultModel, input);
     return new Response(JSON.stringify(result), { headers: jsonHeaders });
   } catch (error) {
     console.error(error);

@@ -1,5 +1,6 @@
 type Env = {
-  OPENAI_API_KEY?: string;
+  ANTHROPIC_API_KEY?: string;
+  ANTHROPIC_MODEL?: string;
 };
 
 type ExtractActionsRequest = {
@@ -12,9 +13,15 @@ type ExtractedTask = {
   due: string;
 };
 
+type AnthropicMessageResponse = {
+  content: Array<{ type: string; text?: string }>;
+};
+
 const jsonHeaders = {
   "content-type": "application/json; charset=utf-8"
 };
+
+const defaultModel = "claude-3-5-haiku-latest";
 
 function fallbackExtract(input: ExtractActionsRequest) {
   const sentences = input.meetingText
@@ -50,66 +57,47 @@ async function parseJson<T>(request: Request): Promise<T | null> {
   }
 }
 
-async function callOpenAI(apiKey: string, input: ExtractActionsRequest) {
-  const response = await fetch("https://api.openai.com/v1/responses", {
+function extractText(data: AnthropicMessageResponse) {
+  return data.content
+    .filter(item => item.type === "text" && item.text)
+    .map(item => item.text)
+    .join("\n")
+    .trim();
+}
+
+async function callClaude(apiKey: string, model: string, input: ExtractActionsRequest) {
+  const response = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
     headers: {
-      authorization: `Bearer ${apiKey}`,
+      "x-api-key": apiKey,
+      "anthropic-version": "2023-06-01",
       "content-type": "application/json"
     },
     body: JSON.stringify({
-      model: "gpt-4.1-mini",
-      input: [
-        {
-          role: "system",
-          content:
-            "너는 회의록에서 실행 가능한 액션 아이템만 추출하는 개인 운영비서다. 한국어 JSON으로 작업 제목, 담당자, 기한, 근거를 작성한다."
-        },
+      model,
+      max_tokens: 1200,
+      system:
+        "너는 회의록에서 실행 가능한 액션 아이템만 추출하는 개인 운영비서다. 한국어 JSON으로 작업 제목, 담당자, 기한, 근거를 작성한다.",
+      messages: [
         {
           role: "user",
-          content: input.meetingText
+          content: [
+            "다음 회의록에서 실행 가능한 액션 아이템만 추출해줘.",
+            "반드시 아래 JSON 형식만 반환해.",
+            '{"tasks":[{"title":"작업 제목","owner":"담당자","due":"기한"}],"evidence":["근거 1","근거 2"]}',
+            input.meetingText
+          ].join("\n\n")
         }
-      ],
-      text: {
-        format: {
-          type: "json_schema",
-          name: "meeting_actions",
-          schema: {
-            type: "object",
-            additionalProperties: false,
-            properties: {
-              tasks: {
-                type: "array",
-                items: {
-                  type: "object",
-                  additionalProperties: false,
-                  properties: {
-                    title: { type: "string" },
-                    owner: { type: "string" },
-                    due: { type: "string" }
-                  },
-                  required: ["title", "owner", "due"]
-                }
-              },
-              evidence: {
-                type: "array",
-                items: { type: "string" }
-              }
-            },
-            required: ["tasks", "evidence"]
-          },
-          strict: true
-        }
-      }
+      ]
     })
   });
 
   if (!response.ok) {
-    throw new Error(`OpenAI request failed: ${response.status}`);
+    throw new Error(`Claude request failed: ${response.status}`);
   }
 
-  const data = await response.json() as { output_text?: string };
-  const parsed = JSON.parse(data.output_text ?? "{}") as {
+  const data = await response.json() as AnthropicMessageResponse;
+  const parsed = JSON.parse(extractText(data)) as {
     tasks?: ExtractedTask[];
     evidence?: string[];
   };
@@ -117,7 +105,7 @@ async function callOpenAI(apiKey: string, input: ExtractActionsRequest) {
   return {
     tasks: parsed.tasks ?? [],
     evidence: parsed.evidence ?? [],
-    source: "openai"
+    source: "claude"
   };
 }
 
@@ -130,12 +118,12 @@ export async function onRequestPost({ request, env }: { request: Request; env: E
     });
   }
 
-  if (!env.OPENAI_API_KEY) {
+  if (!env.ANTHROPIC_API_KEY) {
     return new Response(JSON.stringify(fallbackExtract(input)), { headers: jsonHeaders });
   }
 
   try {
-    const result = await callOpenAI(env.OPENAI_API_KEY, input);
+    const result = await callClaude(env.ANTHROPIC_API_KEY, env.ANTHROPIC_MODEL ?? defaultModel, input);
     return new Response(JSON.stringify(result), { headers: jsonHeaders });
   } catch (error) {
     console.error(error);

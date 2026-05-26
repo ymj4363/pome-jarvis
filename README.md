@@ -37,11 +37,17 @@ Cloudflare Pages Functions are included under `functions/api/assistant/*`.
 - `POST /api/assistant/draft-reply`
 - `POST /api/assistant/extract-actions`
 
-If `OPENAI_API_KEY` is not configured, the functions return deterministic fallback responses so the MVP demo keeps working.
+If `ANTHROPIC_API_KEY` is not configured, the functions return deterministic fallback responses so the MVP demo keeps working.
 
-To enable real LLM responses, add this Cloudflare Pages environment variable/secret:
+To enable real Claude responses, add these Cloudflare Pages environment variables/secrets:
 
-- `OPENAI_API_KEY`
+- `ANTHROPIC_API_KEY`
+- `ANTHROPIC_MODEL` optional, default: `claude-3-5-haiku-latest`
+
+Anthropic API reference:
+
+- https://docs.anthropic.com/en/api/messages
+- https://docs.anthropic.com/en/docs/about-claude/models/overview
 
 ### Automatic deployment
 
