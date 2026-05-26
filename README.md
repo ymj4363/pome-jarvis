@@ -30,6 +30,19 @@ pnpm build
 - Build command: `pnpm build`
 - Output directory: `dist`
 
+### Assistant API
+
+Cloudflare Pages Functions are included under `functions/api/assistant/*`.
+
+- `POST /api/assistant/draft-reply`
+- `POST /api/assistant/extract-actions`
+
+If `OPENAI_API_KEY` is not configured, the functions return deterministic fallback responses so the MVP demo keeps working.
+
+To enable real LLM responses, add this Cloudflare Pages environment variable/secret:
+
+- `OPENAI_API_KEY`
+
 ### Automatic deployment
 
 Use Cloudflare Pages Git integration:

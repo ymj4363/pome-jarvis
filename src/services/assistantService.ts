@@ -1,11 +1,19 @@
-import type { DraftReplyResult, Mail, MeetingActionResult } from "../types";
+import type { DraftReplyResult, Mail, MeetingActionResult, Task } from "../types";
 import { sentenceToTask } from "./meetingService";
+
+type ApiDraftReplyResponse = DraftReplyResult & {
+  source?: "openai" | "fallback";
+};
+
+type ApiExtractActionsResponse = {
+  tasks: Array<Pick<Task, "title" | "owner" | "due">>;
+  evidence: string[];
+  source?: "openai" | "fallback";
+};
 
 const wait = (ms: number) => new Promise(resolve => window.setTimeout(resolve, ms));
 
-export async function draftReply(mail: Mail): Promise<DraftReplyResult> {
-  await wait(250);
-
+function fallbackDraftReply(mail: Mail): DraftReplyResult {
   return {
     draft: [
       `${mail.sender} 담당자님, 안녕하세요.`,
@@ -25,9 +33,7 @@ export async function draftReply(mail: Mail): Promise<DraftReplyResult> {
   };
 }
 
-export async function extractMeetingActions(meetingText: string): Promise<MeetingActionResult> {
-  await wait(250);
-
+function fallbackExtractMeetingActions(meetingText: string): MeetingActionResult {
   const sentences = meetingText
     .split(/[.!?。]\s*|\n/)
     .map(item => item.trim())
@@ -38,5 +44,47 @@ export async function extractMeetingActions(meetingText: string): Promise<Meetin
     tasks: sentences.map(sentenceToTask),
     evidence: sentences.map(sentence => `회의록 문장: ${sentence}`)
   };
+}
+
+async function postJson<TResponse>(path: string, body: unknown): Promise<TResponse> {
+  const response = await fetch(path, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(body)
+  });
+
+  if (!response.ok) {
+    throw new Error(`API request failed: ${response.status}`);
+  }
+
+  return response.json() as Promise<TResponse>;
+}
+
+export async function draftReply(mail: Mail): Promise<DraftReplyResult> {
+  try {
+    return await postJson<ApiDraftReplyResponse>("/api/assistant/draft-reply", { mail });
+  } catch {
+    await wait(250);
+    return fallbackDraftReply(mail);
+  }
+}
+
+export async function extractMeetingActions(meetingText: string): Promise<MeetingActionResult> {
+  try {
+    const result = await postJson<ApiExtractActionsResponse>("/api/assistant/extract-actions", { meetingText });
+
+    return {
+      tasks: result.tasks.map(task => ({
+        ...task,
+        id: crypto.randomUUID(),
+        source: "meeting",
+        done: false
+      })),
+      evidence: result.evidence
+    };
+  } catch {
+    await wait(250);
+    return fallbackExtractMeetingActions(meetingText);
+  }
 }
 
