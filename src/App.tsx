@@ -8,8 +8,8 @@ import {
   initialTasks
 } from "./data";
 import { createReplyDraftApproval, decideApproval as decideApprovalState } from "./services/approvalService";
+import { draftReply, extractMeetingActions } from "./services/assistantService";
 import { createLog } from "./services/logService";
-import { extractMeetingTasks } from "./services/meetingService";
 import type { Approval, LogEntry, Mail, Task } from "./types";
 import { usePersistentState } from "./usePersistentState";
 
@@ -32,6 +32,7 @@ export default function App() {
   const [logs, setLogs] = usePersistentState<LogEntry[]>("pome.logs", initialLogs);
   const [meetingText, setMeetingText] = usePersistentState("pome.meetingText", defaultMeetingText);
   const [draftMailId, setDraftMailId] = usePersistentState("pome.draftMailId", initialMails[1]?.id ?? "");
+  const [assistantBusy, setAssistantBusy] = useState<"draft" | "meeting" | null>(null);
 
   const unreadImportant = useMemo(
     () => mails.filter(mail => mail.label !== "reference"),
@@ -44,28 +45,38 @@ export default function App() {
     setLogs(current => [createLog(entry), ...current]);
   };
 
-  const createReplyDraft = () => {
+  const createReplyDraft = async () => {
     const mail = mails.find(item => item.id === draftMailId);
     if (!mail) return;
 
-    const approval = createReplyDraftApproval(mail);
-    setApprovals(current => [approval, ...current]);
-    addLog({
-      action: "mail.draft_created",
-      detail: `${mail.subject} 답장 초안을 승인 대기함에 추가했습니다.`,
-      status: "pending"
-    });
+    setAssistantBusy("draft");
+    try {
+      const result = await draftReply(mail);
+      const approval = createReplyDraftApproval(mail, result);
+      setApprovals(current => [approval, ...current]);
+      addLog({
+        action: "assistant.draft_reply",
+        detail: `${mail.subject} 답장 초안을 생성하고 승인 대기함에 추가했습니다.`,
+        status: "pending"
+      });
+    } finally {
+      setAssistantBusy(null);
+    }
   };
 
-  const extractMeetingActions = () => {
-    const extracted = extractMeetingTasks(meetingText);
-
-    setTasks(current => [...extracted, ...current]);
-    addLog({
-      action: "meeting.actions_extracted",
-      detail: `회의록에서 액션 ${extracted.length}건을 추출했습니다.`,
-      status: "success"
-    });
+  const extractActions = async () => {
+    setAssistantBusy("meeting");
+    try {
+      const result = await extractMeetingActions(meetingText);
+      setTasks(current => [...result.tasks, ...current]);
+      addLog({
+        action: "assistant.extract_meeting_actions",
+        detail: `회의록에서 액션 ${result.tasks.length}건을 추출했습니다.`,
+        status: "success"
+      });
+    } finally {
+      setAssistantBusy(null);
+    }
   };
 
   const decideApproval = (approvalId: string, status: "approved" | "rejected") => {
@@ -183,7 +194,9 @@ export default function App() {
                   <option key={mail.id} value={mail.id}>{mail.subject}</option>
                 ))}
               </select>
-              <button onClick={createReplyDraft}>답장 초안 만들기</button>
+              <button disabled={assistantBusy === "draft"} onClick={createReplyDraft}>
+                {assistantBusy === "draft" ? "초안 생성 중" : "답장 초안 만들기"}
+              </button>
             </div>
           </div>
           <div className="mail-list">
@@ -206,7 +219,9 @@ export default function App() {
             <p className="eyebrow">회의록 액션 추출</p>
             <h2>텍스트 회의록에서 할 일을 뽑습니다.</h2>
             <textarea value={meetingText} onChange={event => setMeetingText(event.target.value)} />
-            <button onClick={extractMeetingActions}>액션 추출</button>
+            <button disabled={assistantBusy === "meeting"} onClick={extractActions}>
+              {assistantBusy === "meeting" ? "추출 중" : "액션 추출"}
+            </button>
           </article>
 
           <article className="panel">
@@ -243,6 +258,16 @@ export default function App() {
                   </div>
                   <h3>{approval.title}</h3>
                   <p>{approval.description}</p>
+                  {approval.draft && (
+                    <pre className="draft-preview">{approval.draft}</pre>
+                  )}
+                  {approval.evidence && approval.evidence.length > 0 && (
+                    <ul className="evidence-list">
+                      {approval.evidence.map(item => (
+                        <li key={item}>{item}</li>
+                      ))}
+                    </ul>
+                  )}
                   <small>{approval.createdAt} · {approval.status}</small>
                 </div>
                 {approval.status === "pending" && (

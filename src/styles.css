@@ -41,6 +41,12 @@ button {
   transition: transform 160ms ease, background 160ms ease, box-shadow 160ms ease;
 }
 
+button:disabled {
+  cursor: wait;
+  opacity: 0.65;
+  box-shadow: none;
+}
+
 button:hover {
   background: #174dd4;
   box-shadow: 0 10px 24px rgba(31, 94, 255, 0.18);
@@ -400,6 +406,29 @@ textarea {
 .approval-card p {
   color: #536078;
   line-height: 1.6;
+}
+
+.draft-preview {
+  overflow-x: auto;
+  margin: 12px 0;
+  border-radius: 8px;
+  background: #172033;
+  color: #eef3ff;
+  padding: 14px;
+  white-space: pre-wrap;
+  line-height: 1.6;
+  font-family: ui-monospace, "SFMono-Regular", Consolas, monospace;
+  font-size: 13px;
+}
+
+.evidence-list {
+  display: grid;
+  gap: 6px;
+  margin: 10px 0 12px;
+  padding-left: 18px;
+  color: #56637a;
+  font-size: 13px;
+  line-height: 1.5;
 }
 
 .task-card button {

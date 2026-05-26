@@ -31,9 +31,21 @@ export type Approval = {
   type: "email_send" | "calendar_change" | "doc_share" | "task_create";
   title: string;
   description: string;
+  draft?: string;
+  evidence?: string[];
   risk: "low" | "medium" | "high";
   createdAt: string;
   status: "pending" | "approved" | "rejected";
+};
+
+export type DraftReplyResult = {
+  draft: string;
+  evidence: string[];
+};
+
+export type MeetingActionResult = {
+  tasks: Task[];
+  evidence: string[];
 };
 
 export type LogEntry = {
@@ -43,4 +55,3 @@ export type LogEntry = {
   status: "success" | "failed" | "pending" | "rejected";
   createdAt: string;
 };
-
