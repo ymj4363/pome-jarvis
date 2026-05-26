@@ -42,7 +42,7 @@ If `ANTHROPIC_API_KEY` is not configured, the functions return deterministic fal
 To enable real Claude responses, add these Cloudflare Pages environment variables/secrets:
 
 - `ANTHROPIC_API_KEY`
-- `ANTHROPIC_MODEL` optional, default: `claude-3-5-haiku-latest`
+- `ANTHROPIC_MODEL` optional, default: `claude-haiku-4-5-20251001`
 - `ANTHROPIC_DRAFT_MODEL` optional, used for reply drafts
 - `ANTHROPIC_MEETING_MODEL` optional, used for meeting action extraction
 
@@ -51,7 +51,7 @@ Recommended MVP values:
 | Variable | Value |
 |---|---|
 | `ANTHROPIC_API_KEY` | Your Anthropic API key |
-| `ANTHROPIC_MODEL` | `claude-3-5-haiku-latest` |
+| `ANTHROPIC_MODEL` | `claude-haiku-4-5-20251001` |
 | `ANTHROPIC_DRAFT_MODEL` | `claude-sonnet-4-6` |
 | `ANTHROPIC_MEETING_MODEL` | `claude-sonnet-4-6` |
 

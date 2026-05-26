@@ -22,7 +22,7 @@ const jsonHeaders = {
   "content-type": "application/json; charset=utf-8"
 };
 
-const defaultModel = "claude-3-5-haiku-latest";
+const defaultModel = "claude-haiku-4-5-20251001";
 
 function fallbackDraft(input: DraftReplyRequest) {
   const { mail } = input;
