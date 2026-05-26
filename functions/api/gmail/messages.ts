@@ -100,13 +100,8 @@ export async function onRequestGet({
   // pageToken (더 보기 페이지네이션)
   const reqUrl    = new URL(request.url);
   const pageToken = reqUrl.searchParams.get("pageToken");
-  // 오늘 날짜 기준으로 동적 계산 (하드코딩 방지)
-  const now   = new Date();
-  const yyyy  = now.getFullYear();
-  const mm    = String(now.getMonth() + 1).padStart(2, "0");
-  const dd    = String(now.getDate()).padStart(2, "0");
-  const today = `${yyyy}/${mm}/${dd}`;
-  const q = encodeURIComponent(`in:inbox is:unread after:${today}`);
+  // 날짜 필터 없이 최신 안 읽은 메일 10건 (Gmail 최신순 정렬)
+  const q = encodeURIComponent("in:inbox is:unread");
   const listPath  = `/messages?maxResults=10&q=${q}${pageToken ? `&pageToken=${encodeURIComponent(pageToken)}` : ""}`;
 
   // 1. 받은편지함 목록 조회 (최근 10건)
