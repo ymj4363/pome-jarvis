@@ -20,7 +20,7 @@ export function createReplyDraftApproval(
     id:           makeId("approval"),
     type:         "email_send",
     title:        `${mail.subject} 회신 초안`,
-    description:  `${mail.sender}에게 보낼 답장 초안입니다. 승인하면 Gmail을 통해 실제로 발송됩니다.`,
+    description:  `${mail.sender}에게 보낼 답장 초안입니다. 승인하면 Gmail 임시저장함에 저장됩니다.`,
     draft:        draftText,
     evidence:     result.evidence,
     risk:         mail.label === "urgent" ? "high" : "medium",

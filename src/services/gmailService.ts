@@ -79,7 +79,7 @@ export async function trashMail(
   }
 }
 
-/* ── 메일 발송 ───────────────────────────────────────────────────── */
+/* ── 메일 발송 (직접) ────────────────────────────────────────────── */
 
 export async function sendEmail(
   accessToken: string,
@@ -103,4 +103,33 @@ export async function sendEmail(
     };
     throw new Error(data.error ?? `Send failed: ${response.status}`);
   }
+}
+
+/* ── 메일 임시저장 (Gmail Drafts) ────────────────────────────────── */
+
+export async function saveDraft(
+  accessToken: string,
+  to: string,
+  subject: string,
+  body: string
+): Promise<string> {
+  const response = await fetch("/api/gmail/draft", {
+    method: "POST",
+    headers: {
+      Authorization:  `Bearer ${accessToken}`,
+      "content-type": "application/json"
+    },
+    body: JSON.stringify({ to, subject, body })
+  });
+
+  if (!response.ok) {
+    const data = await response.json().catch(() => ({ error: "unknown" })) as {
+      error?: string;
+      detail?: string;
+    };
+    throw new Error(data.error ?? `Draft save failed: ${response.status}`);
+  }
+
+  const data = await response.json() as { draftId: string };
+  return data.draftId;
 }

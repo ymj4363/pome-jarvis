@@ -10,7 +10,7 @@ import {
 import { createReplyDraftApproval, decideApproval as decideApprovalState } from "./services/approvalService";
 import { draftReply, extractMeetingActions, fetchBriefing } from "./services/assistantService";
 import { createCalendarEvent, fetchCalendarEvents } from "./services/calendarService";
-import { fetchGmailMessages, fetchMailBody, fetchMoreMails, sendEmail, trashMail } from "./services/gmailService";
+import { fetchGmailMessages, fetchMailBody, fetchMoreMails, saveDraft, trashMail } from "./services/gmailService";
 import {
   getAuthState,
   handleOAuthCallback,
@@ -479,9 +479,9 @@ export default function App() {
     setExecutingApprovalId(approvalId);
     try {
       if (item.type === "email_send" && item.recipientEmail && item.draft) {
-        await sendEmail(auth.accessToken, item.recipientEmail, item.replySubject ?? item.title, item.draft);
-        showToast(`📧 메일 발송 완료: ${item.recipientEmail}`, "success");
-        addLog({ action: "email.sent", detail: `${item.recipientEmail}에게 "${item.replySubject ?? item.title}" 발송.`, status: "success" });
+        await saveDraft(auth.accessToken, item.recipientEmail, item.replySubject ?? item.title, item.draft);
+        showToast(`📝 Gmail 임시저장 완료 — Gmail에서 최종 발송하세요.`, "success");
+        addLog({ action: "email.draft_saved", detail: `"${item.replySubject ?? item.title}" 임시저장 완료 (수신: ${item.recipientEmail}).`, status: "success" });
       } else if (item.type === "calendar_change" && item.calendarEventData) {
         await createCalendarEvent(auth.accessToken, item.calendarEventData);
         showToast(`📅 일정 생성 완료: ${item.calendarEventData.title}`, "success");
