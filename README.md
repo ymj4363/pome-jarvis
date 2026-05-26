@@ -43,6 +43,28 @@ To enable real Claude responses, add these Cloudflare Pages environment variable
 
 - `ANTHROPIC_API_KEY`
 - `ANTHROPIC_MODEL` optional, default: `claude-3-5-haiku-latest`
+- `ANTHROPIC_DRAFT_MODEL` optional, used for reply drafts
+- `ANTHROPIC_MEETING_MODEL` optional, used for meeting action extraction
+
+Recommended MVP values:
+
+| Variable | Value |
+|---|---|
+| `ANTHROPIC_API_KEY` | Your Anthropic API key |
+| `ANTHROPIC_MODEL` | `claude-3-5-haiku-latest` |
+| `ANTHROPIC_DRAFT_MODEL` | `claude-sonnet-4-20250514` |
+| `ANTHROPIC_MEETING_MODEL` | `claude-sonnet-4-20250514` |
+
+Cloudflare input path:
+
+1. Open Cloudflare Dashboard.
+2. Go to `Workers & Pages`.
+3. Open the `pome-jarvis` Pages project.
+4. Go to `Settings`.
+5. Open `Environment variables`.
+6. Under `Production`, add the variables above.
+7. Save changes.
+8. Trigger a new deployment from `Deployments` or push a commit to `main`.
 
 Anthropic API reference:
 

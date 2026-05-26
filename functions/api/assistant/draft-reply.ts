@@ -1,6 +1,7 @@
 type Env = {
   ANTHROPIC_API_KEY?: string;
   ANTHROPIC_MODEL?: string;
+  ANTHROPIC_DRAFT_MODEL?: string;
 };
 
 type DraftReplyRequest = {
@@ -119,11 +120,11 @@ export async function onRequestPost({ request, env }: { request: Request; env: E
   }
 
   try {
-    const result = await callClaude(env.ANTHROPIC_API_KEY, env.ANTHROPIC_MODEL ?? defaultModel, input);
+    const model = env.ANTHROPIC_DRAFT_MODEL ?? env.ANTHROPIC_MODEL ?? defaultModel;
+    const result = await callClaude(env.ANTHROPIC_API_KEY, model, input);
     return new Response(JSON.stringify(result), { headers: jsonHeaders });
   } catch (error) {
     console.error(error);
     return new Response(JSON.stringify(fallbackDraft(input)), { headers: jsonHeaders });
   }
 }
-
