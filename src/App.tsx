@@ -123,6 +123,9 @@ export default function App() {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const recognitionRef = useRef<any>(null);
 
+  // 열린 할 일 전체 보기
+  const [showAllOpenTasks, setShowAllOpenTasks] = useState(false);
+
   const approvalRef = useRef<HTMLElement>(null);
 
   /* ── 파생 상태 ──────────────────────────────────────────────── */
@@ -389,6 +392,18 @@ export default function App() {
     recognitionRef.current = null;
     setVoiceRecording(false);
     setVoiceInterim("");
+  };
+
+  /* ── 회의록 입력 초기화 (작업 목록은 유지) ──────────────────── */
+  const resetMeetingInput = () => {
+    if (voiceRecording) stopVoiceRecognition();
+    setMeetingText("");
+    setUploadedFileName("");
+    setUploadedFileData(null);
+    setVoiceTranscript("");
+    setVoiceInterim("");
+    setMeetingMode("text");
+    showToast("회의록 입력을 초기화했습니다. 작업 목록은 유지됩니다.", "info");
   };
 
   /* ── 회의록 액션 추출 ───────────────────────────────────────── */
@@ -672,13 +687,23 @@ export default function App() {
               <div className="empty-state"><div className="empty-icon">🎉</div><p>모든 할 일을 완료했습니다!</p></div>
             ) : (
               <div className="stack">
-                {openTasks.slice(0, 4).map(task => (
+                {(showAllOpenTasks ? openTasks : openTasks.slice(0, 4)).map(task => (
                   <label className="task-row" key={task.id}>
                     <input type="checkbox" checked={task.done} onChange={() => toggleTask(task.id)} />
                     <span>{task.title}</span>
                   </label>
                 ))}
-                {openTasks.length > 4 && <p style={{ fontSize: 12, color: "var(--ink-5)", textAlign: "center", margin: 0 }}>외 {openTasks.length - 4}건 더</p>}
+                {openTasks.length > 4 && (
+                  <button
+                    className="ghost"
+                    style={{ width: "100%", fontSize: 12, minHeight: 28 }}
+                    onClick={() => setShowAllOpenTasks(s => !s)}
+                  >
+                    {showAllOpenTasks
+                      ? "▲ 접기"
+                      : `외 ${openTasks.length - 4}건 더 보기`}
+                  </button>
+                )}
               </div>
             )}
           </article>
@@ -747,8 +772,20 @@ export default function App() {
         {/* 회의록 액션 */}
         <section className="grid two" id="meeting">
           <article className="panel">
-            <p className="eyebrow">회의록 액션 추출</p>
-            <h2>회의록에서 할 일을 추출합니다.</h2>
+            <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 8 }}>
+              <div>
+                <p className="eyebrow">회의록 액션 추출</p>
+                <h2>회의록에서 할 일을 추출합니다.</h2>
+              </div>
+              <button
+                className="ghost"
+                style={{ minHeight: 28, padding: "0 10px", fontSize: 12, flexShrink: 0, marginTop: 2 }}
+                onClick={resetMeetingInput}
+                title="입력만 초기화 — 작업 목록은 그대로 유지됩니다"
+              >
+                🗑️ 입력 초기화
+              </button>
+            </div>
 
             {/* 입력 방식 탭 */}
             <div className="meeting-tabs">
