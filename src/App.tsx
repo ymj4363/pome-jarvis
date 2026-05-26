@@ -9,7 +9,7 @@ import {
 } from "./data";
 import { createReplyDraftApproval, decideApproval as decideApprovalState } from "./services/approvalService";
 import { draftReply, extractMeetingActions, fetchBriefing } from "./services/assistantService";
-import { createCalendarEvent, fetchCalendarEvents } from "./services/calendarService";
+import { createCalendarEvent, deleteCalendarEvent, fetchCalendarEvents } from "./services/calendarService";
 import { fetchGmailMessages, fetchMailBody, fetchMoreMails, saveDraft, trashMail } from "./services/gmailService";
 import {
   getAuthState,
@@ -301,6 +301,30 @@ export default function App() {
       setNextPageToken(result.nextPageToken ?? null);
     } catch { showToast("추가 메일을 불러오지 못했습니다.", "error"); }
     finally { setMoreMailsLoading(false); }
+  };
+
+  /* ── 일정 취소 ─────────────────────────────────────────────── */
+  const handleDeleteEvent = async (event: CalendarEvent) => {
+    setEvents(current => current.filter(e => e.id !== event.id));
+    if (auth) {
+      try {
+        await deleteCalendarEvent(auth.accessToken, event.id);
+        showToast(`"${event.title}" 일정을 취소했습니다.`, "info");
+        addLog({ action: "calendar.deleted", detail: `"${event.title}" 일정 취소.`, status: "success" });
+      } catch (err) {
+        setEvents(current => [event, ...current]);
+        showToast(`일정 취소 실패: ${err instanceof Error ? err.message : "오류"}`, "error");
+      }
+    } else {
+      showToast(`"${event.title}" 일정을 숨겼습니다. (데모 모드)`, "info");
+    }
+  };
+
+  /* ── 할 일 개별 삭제 ────────────────────────────────────────── */
+  const handleDeleteTask = (taskId: string, title: string) => {
+    setTasks(current => current.filter(t => t.id !== taskId));
+    addLog({ action: "task.deleted", detail: `"${title}" 할 일을 삭제했습니다.`, status: "success" });
+    showToast(`할 일을 삭제했습니다.`, "info");
   };
 
   /* ── 일정 추가 (승인 대기함 경유) ───────────────────────────── */
@@ -661,8 +685,20 @@ export default function App() {
               <div className="stack">
                 {events.map(event => (
                   <div className="row-item" key={event.id}>
-                    <div><strong>{event.title}</strong>{event.location && <span>{event.location}</span>}</div>
-                    <time>{event.time}</time>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <strong>{event.title}</strong>
+                      {event.location && <span>{event.location}</span>}
+                    </div>
+                    <time style={{ flexShrink: 0 }}>{event.time}</time>
+                    <button
+                      className="mail-trash-btn"
+                      style={{ flexShrink: 0 }}
+                      onClick={() => handleDeleteEvent(event)}
+                      title="일정 취소"
+                      aria-label="일정 취소"
+                    >
+                      🗑️
+                    </button>
                   </div>
                 ))}
               </div>
@@ -858,18 +894,29 @@ export default function App() {
             ) : (
               <div className="stack">
                 {(showAllOpenTasks ? tasks : tasks.slice(0, 3)).map(task => (
-                  <label className={`task-card ${task.done ? "done" : ""}`} key={task.id} style={{ cursor: "pointer" }}>
-                    <input
-                      type="checkbox"
-                      checked={task.done}
-                      onChange={() => toggleTask(task.id)}
-                      style={{ width: 16, height: 16, flexShrink: 0, accentColor: "var(--brand)", cursor: "pointer", marginTop: 2 }}
-                    />
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <strong>{task.title}</strong>
-                      <span>{task.owner} · {task.due} · {task.source}</span>
-                    </div>
-                  </label>
+                  <div className={`task-card ${task.done ? "done" : ""}`} key={task.id}>
+                    <label style={{ display: "flex", alignItems: "flex-start", gap: 10, flex: 1, minWidth: 0, cursor: "pointer" }}>
+                      <input
+                        type="checkbox"
+                        checked={task.done}
+                        onChange={() => toggleTask(task.id)}
+                        style={{ width: 16, height: 16, flexShrink: 0, accentColor: "var(--brand)", cursor: "pointer", marginTop: 2 }}
+                      />
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <strong>{task.title}</strong>
+                        <span>{task.owner} · {task.due} · {task.source}</span>
+                      </div>
+                    </label>
+                    <button
+                      className="mail-trash-btn"
+                      style={{ flexShrink: 0, alignSelf: "center" }}
+                      onClick={() => handleDeleteTask(task.id, task.title)}
+                      title="할 일 삭제"
+                      aria-label="할 일 삭제"
+                    >
+                      🗑️
+                    </button>
+                  </div>
                 ))}
                 {tasks.length > 3 && (
                   <button

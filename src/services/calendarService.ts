@@ -45,3 +45,24 @@ export async function createCalendarEvent(
   const result = await response.json() as { ok: boolean; id: string; link: string };
   return result.id;
 }
+
+/* ── 일정 삭제 ───────────────────────────────────────────────────── */
+
+export async function deleteCalendarEvent(
+  accessToken: string,
+  eventId: string
+): Promise<void> {
+  const response = await fetch("/api/calendar/delete", {
+    method: "POST",
+    headers: {
+      Authorization:  `Bearer ${accessToken}`,
+      "content-type": "application/json"
+    },
+    body: JSON.stringify({ eventId })
+  });
+
+  if (!response.ok) {
+    const body = await response.json().catch(() => ({ error: "unknown" })) as { error?: string };
+    throw new Error(body.error ?? `Calendar delete failed: ${response.status}`);
+  }
+}
