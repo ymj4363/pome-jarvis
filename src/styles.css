@@ -1424,16 +1424,7 @@ textarea {
   box-sizing: border-box;
 }
 
-/* Desktop (≥861px): hide main-content input panel; collapse meeting grid to 1 col */
-@media (min-width: 861px) {
-  .meeting-input-panel { display: none !important; }
-  .meeting-grid { grid-template-columns: 1fr !important; }
-}
-
-/* Mobile / narrow (≤860px): hide sidebar meeting block; show main-content input panel */
-@media (max-width: 860px) {
-  .sidebar-meeting { display: none; }
-}
+/* (sidebar-meeting 제거됨 — 회의록 섹션은 메인 컨텐츠에 상시 표시) */
 
 /* ── Section Accent Colors ──────────────────────────────────────── */
 
@@ -1449,6 +1440,12 @@ textarea {
 .panel-briefing {
   border-top: 3px solid var(--brand);
 }
+
+/* 회의록 섹션 — 스카이 블루 */
+.section-meeting > .panel {
+  border-top: 3px solid #0284c7;
+}
+.section-meeting .eyebrow { color: #0284c7; font-weight: 600; }
 
 /* 이메일 섹션 — 브랜드 블루 */
 .section-mail {

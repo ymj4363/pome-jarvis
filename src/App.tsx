@@ -42,8 +42,8 @@ const RISK_TEXT: Record<string, string> = {
 
 const NAV_ITEMS = [
   { id: "briefing", icon: "📊", label: "운영판" },
-  { id: "mail",     icon: "✉️",  label: "메일" },
   { id: "meeting",  icon: "📝",  label: "회의록" },
+  { id: "mail",     icon: "✉️",  label: "메일" },
   { id: "approval", icon: "✅",  label: "승인" },
   { id: "log",      icon: "📋",  label: "로그" }
 ];
@@ -544,107 +544,6 @@ export default function App() {
           ))}
         </nav>
 
-        {/* ── 회의록 빠른 입력 (데스크톱 전용) ────────────────── */}
-        <div className="sidebar-meeting">
-          <p className="nav-label" style={{ marginTop: 4 }}>회의록 입력</p>
-
-          <div className="meeting-tabs" style={{ gap: 3, marginTop: 0 }}>
-            {MEETING_TABS.map(tab => (
-              <button
-                key={tab.id}
-                className={meetingMode === tab.id ? "" : "ghost"}
-                style={{ flex: 1, minHeight: 28, fontSize: 11, padding: "0 3px" }}
-                onClick={() => setMeetingMode(tab.id)}
-                title={tab.label}
-              >
-                {tab.icon}
-              </button>
-            ))}
-          </div>
-
-          {meetingMode === "text" && (
-            <textarea
-              className="sidebar-meeting-textarea"
-              value={meetingText}
-              onChange={e => setMeetingText(e.target.value)}
-              placeholder="회의록을 입력하세요…"
-            />
-          )}
-
-          {meetingMode === "file" && (
-            <>
-              <label htmlFor="sidebar-meeting-file" className="file-drop-label" style={{ padding: "12px 8px", marginTop: 8, gap: 4 }}>
-                <span>📂</span>
-                <span style={{ fontSize: 12 }}>이미지 · PDF 선택</span>
-              </label>
-              <input
-                id="sidebar-meeting-file"
-                type="file"
-                accept="image/*,.pdf,application/pdf"
-                style={{ display: "none" }}
-                onChange={handleFileUpload}
-              />
-              {uploadedFileName && (
-                <p style={{ fontSize: 11, color: "var(--success)", margin: "4px 0 0", fontWeight: 500 }}>
-                  📄 {uploadedFileName}
-                </p>
-              )}
-            </>
-          )}
-
-          {meetingMode === "voice" && (
-            <>
-              {!voiceSupported ? (
-                <p style={{ fontSize: 11, color: "var(--warning)", marginTop: 6 }}>⚠️ Chrome 필요</p>
-              ) : (
-                <>
-                  <button
-                    className={voiceRecording ? "danger-ghost" : ""}
-                    style={{ width: "100%", fontSize: 12, minHeight: 32, marginTop: 6 }}
-                    onClick={voiceRecording ? stopVoiceRecognition : startVoiceRecognition}
-                  >
-                    {voiceRecording ? "⏹ 중지" : "🎤 인식 시작"}
-                  </button>
-                  {voiceRecording && (
-                    <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 6, fontSize: 11, color: "var(--danger)" }}>
-                      <span className="voice-dot" /> 인식 중…
-                    </div>
-                  )}
-                  {voiceTranscript && (
-                    <p style={{ fontSize: 11, color: "var(--ink-6)", marginTop: 4, lineHeight: 1.55 }}>
-                      {voiceTranscript.length > 90 ? voiceTranscript.slice(0, 90) + "…" : voiceTranscript}
-                    </p>
-                  )}
-                </>
-              )}
-            </>
-          )}
-
-          <div style={{ display: "flex", gap: 4, marginTop: 8 }}>
-            <button
-              style={{ flex: 1, fontSize: 12, minHeight: 32 }}
-              disabled={
-                assistantBusy === "meeting" || fileExtracting ||
-                (meetingMode === "file" && !uploadedFileData) ||
-                (meetingMode === "voice" && !voiceTranscript)
-              }
-              onClick={extractActions}
-            >
-              {(assistantBusy === "meeting" || fileExtracting)
-                ? <><span className="spinner" />{fileExtracting ? "분석 중" : "추출 중"}</>
-                : "📝 액션 추출"}
-            </button>
-            <button
-              className="ghost"
-              style={{ minHeight: 32, padding: "0 8px", fontSize: 12 }}
-              onClick={resetMeetingInput}
-              title="입력 초기화 (작업 목록 유지)"
-            >
-              🗑️
-            </button>
-          </div>
-        </div>
-
         <div className="sidebar-footer">
           {auth ? (
             <>
@@ -808,78 +707,9 @@ export default function App() {
 
         </section>
 
-        {/* 이메일 요약 */}
-        <section className="panel section-mail" id="mail">
-          <div className="section-head">
-            <div>
-              <p className="eyebrow">이메일 요약</p>
-              <h2>{auth ? "Gmail 메일함" : "중요도와 다음 액션을 분류했습니다."}</h2>
-            </div>
-            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <div className="draft-control">
-                <select value={draftMailId} onChange={e => setDraftMailId(e.target.value)}>
-                  {mails.map(mail => <option key={mail.id} value={mail.id}>{mail.subject}</option>)}
-                </select>
-                <button disabled={assistantBusy === "draft"} onClick={createReplyDraft}>
-                  {assistantBusy === "draft" ? <><span className="spinner" />초안 생성 중</> : <>✉️ 답장 초안 만들기</>}
-                </button>
-              </div>
-              <button
-                className="ghost"
-                style={{ minHeight: 28, padding: "0 10px", fontSize: 12, flexShrink: 0 }}
-                onClick={() => setShowMails(s => !s)}
-              >
-                {showMails ? "▲ 접기" : "▼ 펼치기"}
-              </button>
-            </div>
-          </div>
-
-          {showMails && (mails.length === 0 ? (
-            <div className="empty-state"><div className="empty-icon">📭</div><p>받은 메일이 없습니다.</p></div>
-          ) : (
-            <>
-              <div className="mail-list">
-                {mails.map(mail => (
-                  <article
-                    className={`mail-card ${mail.label}`} key={mail.id}
-                    onClick={() => handleMailClick(mail)}
-                    role="button" tabIndex={0}
-                    onKeyDown={e => e.key === "Enter" && handleMailClick(mail)}
-                  >
-                    <div className="mail-topline">
-                      <span className={`pill ${mail.label}`}>{LABEL_TEXT[mail.label]}</span>
-                      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                        <time>{mail.receivedAt}</time>
-                        <button
-                          className="mail-trash-btn"
-                          onClick={e => handleTrashMail(e, mail)}
-                          title="메일 삭제 (휴지통)"
-                          aria-label="메일 삭제"
-                        >
-                          🗑️
-                        </button>
-                      </div>
-                    </div>
-                    <h3>{mail.subject}</h3>
-                    <p>{mail.summary}</p>
-                    <small>{mail.sender}</small>
-                  </article>
-                ))}
-              </div>
-              {auth && nextPageToken && (
-                <div style={{ marginTop: 16, textAlign: "center" }}>
-                  <button className="ghost" disabled={moreMailsLoading} onClick={handleLoadMoreMails}>
-                    {moreMailsLoading ? <><span className="spinner" />불러오는 중…</> : "📬 메일 더 보기"}
-                  </button>
-                </div>
-              )}
-            </>
-          ))}
-        </section>
-
         {/* 회의록 액션 */}
-        <section className="meeting-grid grid two" id="meeting">
-          <article className="panel meeting-input-panel">
+        <section className="grid two section-meeting" id="meeting">
+          <article className="panel">
             <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 8 }}>
               <div>
                 <p className="eyebrow">회의록 액션 추출</p>
@@ -1044,6 +874,75 @@ export default function App() {
               </div>
             ))}
           </article>
+        </section>
+
+        {/* 이메일 요약 */}
+        <section className="panel section-mail" id="mail">
+          <div className="section-head">
+            <div>
+              <p className="eyebrow">이메일 요약</p>
+              <h2>{auth ? "Gmail 메일함" : "중요도와 다음 액션을 분류했습니다."}</h2>
+            </div>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <div className="draft-control">
+                <select value={draftMailId} onChange={e => setDraftMailId(e.target.value)}>
+                  {mails.map(mail => <option key={mail.id} value={mail.id}>{mail.subject}</option>)}
+                </select>
+                <button disabled={assistantBusy === "draft"} onClick={createReplyDraft}>
+                  {assistantBusy === "draft" ? <><span className="spinner" />초안 생성 중</> : <>✉️ 답장 초안 만들기</>}
+                </button>
+              </div>
+              <button
+                className="ghost"
+                style={{ minHeight: 28, padding: "0 10px", fontSize: 12, flexShrink: 0 }}
+                onClick={() => setShowMails(s => !s)}
+              >
+                {showMails ? "▲ 접기" : "▼ 펼치기"}
+              </button>
+            </div>
+          </div>
+
+          {showMails && (mails.length === 0 ? (
+            <div className="empty-state"><div className="empty-icon">📭</div><p>받은 메일이 없습니다.</p></div>
+          ) : (
+            <>
+              <div className="mail-list">
+                {mails.map(mail => (
+                  <article
+                    className={`mail-card ${mail.label}`} key={mail.id}
+                    onClick={() => handleMailClick(mail)}
+                    role="button" tabIndex={0}
+                    onKeyDown={e => e.key === "Enter" && handleMailClick(mail)}
+                  >
+                    <div className="mail-topline">
+                      <span className={`pill ${mail.label}`}>{LABEL_TEXT[mail.label]}</span>
+                      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                        <time>{mail.receivedAt}</time>
+                        <button
+                          className="mail-trash-btn"
+                          onClick={e => handleTrashMail(e, mail)}
+                          title="메일 삭제 (휴지통)"
+                          aria-label="메일 삭제"
+                        >
+                          🗑️
+                        </button>
+                      </div>
+                    </div>
+                    <h3>{mail.subject}</h3>
+                    <p>{mail.summary}</p>
+                    <small>{mail.sender}</small>
+                  </article>
+                ))}
+              </div>
+              {auth && nextPageToken && (
+                <div style={{ marginTop: 16, textAlign: "center" }}>
+                  <button className="ghost" disabled={moreMailsLoading} onClick={handleLoadMoreMails}>
+                    {moreMailsLoading ? <><span className="spinner" />불러오는 중…</> : "📬 메일 더 보기"}
+                  </button>
+                </div>
+              )}
+            </>
+          ))}
         </section>
 
         {/* 승인 대기함 */}
