@@ -1099,7 +1099,9 @@ textarea {
   align-items: center;
   justify-content: center;
 }
-.mail-card:hover .mail-trash-btn { opacity: 1; }
+.mail-card:hover .mail-trash-btn,
+.row-item:hover .mail-trash-btn,
+.task-card:hover .mail-trash-btn { opacity: 1; }
 .mail-trash-btn:hover {
   color: var(--danger);
   background: var(--danger-bg);
