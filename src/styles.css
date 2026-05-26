@@ -151,6 +151,20 @@ textarea {
   line-height: 1.5;
 }
 
+.reset-button {
+  width: 100%;
+  margin-top: 12px;
+  background: #ffffff;
+  color: #34415c;
+  box-shadow: inset 0 0 0 1px #d8deea;
+}
+
+.reset-button:hover {
+  background: #eef3ff;
+  color: #1f5eff;
+  box-shadow: inset 0 0 0 1px #b7cdfb;
+}
+
 .content {
   min-width: 0;
   padding: 28px;
@@ -502,4 +516,3 @@ textarea {
     flex: 1;
   }
 }
-

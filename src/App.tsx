@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { initialApprovals, initialEvents, initialLogs, initialMails, initialTasks } from "./data";
 import type { Approval, LogEntry, Mail, Task } from "./types";
+import { usePersistentState } from "./usePersistentState";
 
 const labelText = {
   urgent: "긴급",
@@ -29,13 +30,14 @@ function makeId(prefix: string) {
 
 export default function App() {
   const [mails] = useState<Mail[]>(initialMails);
-  const [tasks, setTasks] = useState<Task[]>(initialTasks);
-  const [approvals, setApprovals] = useState<Approval[]>(initialApprovals);
-  const [logs, setLogs] = useState<LogEntry[]>(initialLogs);
-  const [meetingText, setMeetingText] = useState(
+  const [tasks, setTasks] = usePersistentState<Task[]>("pome.tasks", initialTasks);
+  const [approvals, setApprovals] = usePersistentState<Approval[]>("pome.approvals", initialApprovals);
+  const [logs, setLogs] = usePersistentState<LogEntry[]>("pome.logs", initialLogs);
+  const [meetingText, setMeetingText] = usePersistentState(
+    "pome.meetingText",
     "김대리는 금요일까지 Q2 보고서 수치를 업데이트한다. 나는 오늘 중 서버 장애 원인을 정리한다. 다음 회의는 다음 주 화요일 오후 2시로 잡는다."
   );
-  const [draftMailId, setDraftMailId] = useState(initialMails[1]?.id ?? "");
+  const [draftMailId, setDraftMailId] = usePersistentState("pome.draftMailId", initialMails[1]?.id ?? "");
 
   const unreadImportant = useMemo(
     () => mails.filter(mail => mail.label !== "reference"),
@@ -118,6 +120,16 @@ export default function App() {
     );
   };
 
+  const resetDemoState = () => {
+    setTasks(initialTasks);
+    setApprovals(initialApprovals);
+    setLogs(initialLogs);
+    setMeetingText(
+      "김대리는 금요일까지 Q2 보고서 수치를 업데이트한다. 나는 오늘 중 서버 장애 원인을 정리한다. 다음 회의는 다음 주 화요일 오후 2시로 잡는다."
+    );
+    setDraftMailId(initialMails[1]?.id ?? "");
+  };
+
   return (
     <div className="app-shell">
       <aside className="sidebar">
@@ -137,6 +149,7 @@ export default function App() {
         </nav>
         <div className="sidebar-note">
           4주 MVP는 외부 서비스 완전 연동이 아니라 핵심 흐름 검증 데모입니다.
+          <button className="reset-button" onClick={resetDemoState}>데모 초기화</button>
         </div>
       </aside>
 
@@ -296,4 +309,3 @@ export default function App() {
     </div>
   );
 }
-
