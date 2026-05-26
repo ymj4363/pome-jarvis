@@ -586,10 +586,11 @@ export default function App() {
   };
 
   const resetAllData = () => {
-    setTasks([]); setApprovals([]); setLogs([]);
+    if (!window.confirm("승인함·실행 로그·회의록 입력을 초기화합니다.\n할 일 목록은 유지됩니다. 계속할까요?")) return;
+    setApprovals([]); setLogs([]);
     setMeetingText(""); setDraftMailId("");
     if (!auth) { setMails(initialMails); setEvents(initialEvents); }
-    showToast("데이터를 초기화했습니다.", "info");
+    showToast("데이터를 초기화했습니다. (할 일 목록은 유지)", "info");
   };
 
   /* ── Render ─────────────────────────────────────────────────── */
