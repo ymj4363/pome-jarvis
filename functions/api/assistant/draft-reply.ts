@@ -10,7 +10,7 @@ type DraftReplyRequest = {
     subject: string;
     label: string;
     summary: string;
-    body: string;
+    body?: string;
   };
 };
 
@@ -62,6 +62,21 @@ function extractText(data: AnthropicMessageResponse) {
     .trim();
 }
 
+function parseClaudeJson<T>(text: string): T {
+  const cleaned = text
+    .replace(/^```(?:json)?/i, "")
+    .replace(/```$/i, "")
+    .trim();
+  const start = cleaned.indexOf("{");
+  const end = cleaned.lastIndexOf("}");
+
+  if (start === -1 || end === -1 || end <= start) {
+    throw new Error("Claude response did not contain a JSON object");
+  }
+
+  return JSON.parse(cleaned.slice(start, end + 1)) as T;
+}
+
 async function callClaude(apiKey: string, model: string, input: DraftReplyRequest) {
   const response = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
@@ -73,15 +88,16 @@ async function callClaude(apiKey: string, model: string, input: DraftReplyReques
     body: JSON.stringify({
       model,
       max_tokens: 1200,
+      temperature: 0.2,
       system:
-        "너는 승인형 개인 운영비서다. 메일을 실제 발송하지 말고, 사용자가 검토할 수 있는 한국어 답장 초안과 근거를 JSON으로만 작성한다.",
+        "You are a Korean executive assistant. Write a concise Korean email reply draft. Return only valid JSON with keys draft and evidence.",
       messages: [
         {
           role: "user",
           content: [
-            "다음 메일에 대한 답장 초안을 작성해줘.",
-            "반드시 아래 JSON 형식만 반환해.",
-            '{"draft":"답장 초안","evidence":["근거 1","근거 2"]}',
+            "Create a Korean reply draft for this email.",
+            "Return only this JSON shape:",
+            '{"draft":"reply draft","evidence":["reason 1","reason 2"]}',
             JSON.stringify(input.mail)
           ].join("\n\n")
         }
@@ -90,14 +106,15 @@ async function callClaude(apiKey: string, model: string, input: DraftReplyReques
   });
 
   if (!response.ok) {
-    throw new Error(`Claude request failed: ${response.status}`);
+    const body = await response.text();
+    throw new Error(`Claude request failed: ${response.status} ${body.slice(0, 200)}`);
   }
 
-  const data = await response.json() as AnthropicMessageResponse;
-  const parsed = JSON.parse(extractText(data)) as {
+  const data = (await response.json()) as AnthropicMessageResponse;
+  const parsed = parseClaudeJson<{
     draft?: string;
     evidence?: string[];
-  };
+  }>(extractText(data));
 
   return {
     draft: parsed.draft ?? "",

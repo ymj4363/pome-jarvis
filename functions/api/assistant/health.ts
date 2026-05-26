@@ -49,7 +49,11 @@ export async function onRequestGet({ request, env }: { request: Request; env: En
   const shouldPing = new URL(request.url).searchParams.get("ping") === "1";
   const claudePing =
     shouldPing && env.ANTHROPIC_API_KEY
-      ? await pingClaude(env.ANTHROPIC_API_KEY, model)
+      ? {
+          basePing: await pingClaude(env.ANTHROPIC_API_KEY, model),
+          draftPing: await pingClaude(env.ANTHROPIC_API_KEY, draftModel),
+          meetingPing: await pingClaude(env.ANTHROPIC_API_KEY, meetingModel)
+        }
       : undefined;
 
   return new Response(

@@ -26,7 +26,7 @@ const defaultModel = "claude-haiku-4-5-20251001";
 
 function fallbackExtract(input: ExtractActionsRequest) {
   const sentences = input.meetingText
-    .split(/[.!?。]\s*|\n/)
+    .split(/[.!?\n]/)
     .map(item => item.trim())
     .filter(Boolean)
     .slice(0, 4);
@@ -66,6 +66,21 @@ function extractText(data: AnthropicMessageResponse) {
     .trim();
 }
 
+function parseClaudeJson<T>(text: string): T {
+  const cleaned = text
+    .replace(/^```(?:json)?/i, "")
+    .replace(/```$/i, "")
+    .trim();
+  const start = cleaned.indexOf("{");
+  const end = cleaned.lastIndexOf("}");
+
+  if (start === -1 || end === -1 || end <= start) {
+    throw new Error("Claude response did not contain a JSON object");
+  }
+
+  return JSON.parse(cleaned.slice(start, end + 1)) as T;
+}
+
 async function callClaude(apiKey: string, model: string, input: ExtractActionsRequest) {
   const response = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
@@ -77,15 +92,16 @@ async function callClaude(apiKey: string, model: string, input: ExtractActionsRe
     body: JSON.stringify({
       model,
       max_tokens: 1200,
+      temperature: 0.2,
       system:
-        "너는 회의록에서 실행 가능한 액션 아이템만 추출하는 개인 운영비서다. 한국어 JSON으로 작업 제목, 담당자, 기한, 근거를 작성한다.",
+        "You are a Korean executive assistant. Extract only actionable tasks from meeting notes. Return only valid JSON with keys tasks and evidence.",
       messages: [
         {
           role: "user",
           content: [
-            "다음 회의록에서 실행 가능한 액션 아이템만 추출해줘.",
-            "반드시 아래 JSON 형식만 반환해.",
-            '{"tasks":[{"title":"작업 제목","owner":"담당자","due":"기한"}],"evidence":["근거 1","근거 2"]}',
+            "Extract action items from these meeting notes.",
+            "Return only this JSON shape:",
+            '{"tasks":[{"title":"task title","owner":"owner","due":"due date"}],"evidence":["reason 1","reason 2"]}',
             input.meetingText
           ].join("\n\n")
         }
@@ -94,14 +110,15 @@ async function callClaude(apiKey: string, model: string, input: ExtractActionsRe
   });
 
   if (!response.ok) {
-    throw new Error(`Claude request failed: ${response.status}`);
+    const body = await response.text();
+    throw new Error(`Claude request failed: ${response.status} ${body.slice(0, 200)}`);
   }
 
-  const data = await response.json() as AnthropicMessageResponse;
-  const parsed = JSON.parse(extractText(data)) as {
+  const data = (await response.json()) as AnthropicMessageResponse;
+  const parsed = parseClaudeJson<{
     tasks?: ExtractedTask[];
     evidence?: string[];
-  };
+  }>(extractText(data));
 
   return {
     tasks: parsed.tasks ?? [],
