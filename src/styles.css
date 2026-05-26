@@ -1398,3 +1398,39 @@ textarea {
     line-height: 1;
   }
 }
+
+/* ── Sidebar Meeting Block ───────────────────────────────────────── */
+
+.sidebar-meeting {
+  border-top: 1px solid var(--ink-1);
+  padding: 10px 6px 6px;
+  flex-shrink: 0;
+}
+
+.sidebar-meeting-textarea {
+  width: 100%;
+  min-height: 90px;
+  resize: vertical;
+  font-size: 12px;
+  line-height: 1.6;
+  padding: 8px 10px;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--ink-2);
+  background: var(--ink-0);
+  color: var(--ink-7);
+  font-family: inherit;
+  display: block;
+  margin-top: 6px;
+  box-sizing: border-box;
+}
+
+/* Desktop (≥861px): hide main-content input panel; collapse meeting grid to 1 col */
+@media (min-width: 861px) {
+  .meeting-input-panel { display: none !important; }
+  .meeting-grid { grid-template-columns: 1fr !important; }
+}
+
+/* Mobile / narrow (≤860px): hide sidebar meeting block; show main-content input panel */
+@media (max-width: 860px) {
+  .sidebar-meeting { display: none; }
+}

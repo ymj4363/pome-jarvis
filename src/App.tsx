@@ -530,6 +530,107 @@ export default function App() {
           ))}
         </nav>
 
+        {/* ── 회의록 빠른 입력 (데스크톱 전용) ────────────────── */}
+        <div className="sidebar-meeting">
+          <p className="nav-label" style={{ marginTop: 4 }}>회의록 입력</p>
+
+          <div className="meeting-tabs" style={{ gap: 3, marginTop: 0 }}>
+            {MEETING_TABS.map(tab => (
+              <button
+                key={tab.id}
+                className={meetingMode === tab.id ? "" : "ghost"}
+                style={{ flex: 1, minHeight: 28, fontSize: 11, padding: "0 3px" }}
+                onClick={() => setMeetingMode(tab.id)}
+                title={tab.label}
+              >
+                {tab.icon}
+              </button>
+            ))}
+          </div>
+
+          {meetingMode === "text" && (
+            <textarea
+              className="sidebar-meeting-textarea"
+              value={meetingText}
+              onChange={e => setMeetingText(e.target.value)}
+              placeholder="회의록을 입력하세요…"
+            />
+          )}
+
+          {meetingMode === "file" && (
+            <>
+              <label htmlFor="sidebar-meeting-file" className="file-drop-label" style={{ padding: "12px 8px", marginTop: 8, gap: 4 }}>
+                <span>📂</span>
+                <span style={{ fontSize: 12 }}>이미지 · PDF 선택</span>
+              </label>
+              <input
+                id="sidebar-meeting-file"
+                type="file"
+                accept="image/*,.pdf,application/pdf"
+                style={{ display: "none" }}
+                onChange={handleFileUpload}
+              />
+              {uploadedFileName && (
+                <p style={{ fontSize: 11, color: "var(--success)", margin: "4px 0 0", fontWeight: 500 }}>
+                  📄 {uploadedFileName}
+                </p>
+              )}
+            </>
+          )}
+
+          {meetingMode === "voice" && (
+            <>
+              {!voiceSupported ? (
+                <p style={{ fontSize: 11, color: "var(--warning)", marginTop: 6 }}>⚠️ Chrome 필요</p>
+              ) : (
+                <>
+                  <button
+                    className={voiceRecording ? "danger-ghost" : ""}
+                    style={{ width: "100%", fontSize: 12, minHeight: 32, marginTop: 6 }}
+                    onClick={voiceRecording ? stopVoiceRecognition : startVoiceRecognition}
+                  >
+                    {voiceRecording ? "⏹ 중지" : "🎤 인식 시작"}
+                  </button>
+                  {voiceRecording && (
+                    <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 6, fontSize: 11, color: "var(--danger)" }}>
+                      <span className="voice-dot" /> 인식 중…
+                    </div>
+                  )}
+                  {voiceTranscript && (
+                    <p style={{ fontSize: 11, color: "var(--ink-6)", marginTop: 4, lineHeight: 1.55 }}>
+                      {voiceTranscript.length > 90 ? voiceTranscript.slice(0, 90) + "…" : voiceTranscript}
+                    </p>
+                  )}
+                </>
+              )}
+            </>
+          )}
+
+          <div style={{ display: "flex", gap: 4, marginTop: 8 }}>
+            <button
+              style={{ flex: 1, fontSize: 12, minHeight: 32 }}
+              disabled={
+                assistantBusy === "meeting" || fileExtracting ||
+                (meetingMode === "file" && !uploadedFileData) ||
+                (meetingMode === "voice" && !voiceTranscript)
+              }
+              onClick={extractActions}
+            >
+              {(assistantBusy === "meeting" || fileExtracting)
+                ? <><span className="spinner" />{fileExtracting ? "분석 중" : "추출 중"}</>
+                : "📝 액션 추출"}
+            </button>
+            <button
+              className="ghost"
+              style={{ minHeight: 32, padding: "0 8px", fontSize: 12 }}
+              onClick={resetMeetingInput}
+              title="입력 초기화 (작업 목록 유지)"
+            >
+              🗑️
+            </button>
+          </div>
+        </div>
+
         <div className="sidebar-footer">
           {auth ? (
             <>
@@ -781,8 +882,8 @@ export default function App() {
         </section>
 
         {/* 회의록 액션 */}
-        <section className="grid two" id="meeting">
-          <article className="panel">
+        <section className="meeting-grid grid two" id="meeting">
+          <article className="panel meeting-input-panel">
             <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 8 }}>
               <div>
                 <p className="eyebrow">회의록 액션 추출</p>
