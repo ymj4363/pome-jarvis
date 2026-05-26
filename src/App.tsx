@@ -130,7 +130,9 @@ export default function App() {
   const [newTaskTitle, setNewTaskTitle] = useState("");
   const [newTaskDue,   setNewTaskDue]   = useState("");
 
-  const approvalRef = useRef<HTMLElement>(null);
+  const approvalRef      = useRef<HTMLElement>(null);
+  const lastRefreshedAt  = useRef<number>(0);       // 마지막 데이터 갱신 시각 (ms)
+  const REFRESH_COOLDOWN = 10 * 60 * 1000;          // 10분
 
   /* ── 파생 상태 ──────────────────────────────────────────────── */
   const unreadImportant    = useMemo(() => mails.filter(m => m.label !== "reference"), [mails]);
@@ -188,6 +190,7 @@ export default function App() {
       }
     } finally {
       setDataLoading(false);
+      lastRefreshedAt.current = Date.now();
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [showToast]);
@@ -251,6 +254,19 @@ export default function App() {
     if (meetingMode !== "voice" && voiceRecording) stopVoiceRecognition();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [meetingMode]);
+
+  /* ── 탭 복귀 시 자동 새로고침 (10분 쿨다운) ─────────────────── */
+  useEffect(() => {
+    const handleVisibility = () => {
+      if (document.visibilityState !== "visible") return;
+      if (!auth) return;
+      if (Date.now() - lastRefreshedAt.current < REFRESH_COOLDOWN) return;
+      loadRealData(auth.accessToken, auth.user.name);
+    };
+    document.addEventListener("visibilitychange", handleVisibility);
+    return () => document.removeEventListener("visibilitychange", handleVisibility);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [auth, loadRealData]);
 
   /* ── 공통 핸들러 ────────────────────────────────────────────── */
   const addLog = (entry: Omit<LogEntry, "id" | "createdAt">) =>
