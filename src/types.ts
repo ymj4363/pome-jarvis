@@ -24,6 +24,7 @@ export type Task = {
   due: string;
   source: "manual" | "meeting" | "mail";
   done: boolean;
+  pinned?: boolean;
 };
 
 export type CalendarEventData = {

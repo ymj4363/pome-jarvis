@@ -130,6 +130,10 @@ export default function App() {
   const [newTaskTitle, setNewTaskTitle] = useState("");
   const [newTaskDue,   setNewTaskDue]   = useState("");
 
+  // 할 일 인라인 편집
+  const [editingTaskId,    setEditingTaskId]    = useState<string | null>(null);
+  const [editingTaskTitle, setEditingTaskTitle] = useState("");
+
   const approvalRef      = useRef<HTMLElement>(null);
   const lastRefreshedAt  = useRef<number>(0);       // 마지막 데이터 갱신 시각 (ms)
   const REFRESH_COOLDOWN = 10 * 60 * 1000;          // 10분
@@ -356,6 +360,24 @@ export default function App() {
     setTasks(current => current.filter(t => t.id !== taskId));
     addLog({ action: "task.deleted", detail: `"${title}" 할 일을 삭제했습니다.`, status: "success" });
     showToast(`할 일을 삭제했습니다.`, "info");
+  };
+
+  /* ── 할 일 제목 편집 ─────────────────────────────────────────── */
+  const startEditTask = (taskId: string, currentTitle: string) => {
+    setEditingTaskId(taskId);
+    setEditingTaskTitle(currentTitle);
+  };
+  const commitEditTask = (taskId: string) => {
+    const trimmed = editingTaskTitle.trim();
+    if (trimmed) setTasks(current => current.map(t => t.id === taskId ? { ...t, title: trimmed } : t));
+    setEditingTaskId(null);
+    setEditingTaskTitle("");
+  };
+  const cancelEditTask = () => { setEditingTaskId(null); setEditingTaskTitle(""); };
+
+  /* ── 할 일 상단 고정 ─────────────────────────────────────────── */
+  const handlePinTask = (taskId: string) => {
+    setTasks(current => current.map(t => t.id === taskId ? { ...t, pinned: !t.pinned } : t));
   };
 
   /* ── 일정 추가 (승인 대기함 경유) ───────────────────────────── */
@@ -952,8 +974,11 @@ export default function App() {
               <div className="empty-state"><div className="empty-icon">📋</div><p>작업이 없습니다.<br />회의록에서 액션을 추출해 보세요.</p></div>
             ) : (
               <div className="stack">
-                {(showAllOpenTasks ? tasks : tasks.slice(0, 3)).map(task => (
-                  <div className={`task-card ${task.done ? "done" : ""}`} key={task.id}>
+                {(showAllOpenTasks
+                  ? [...tasks].sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0))
+                  : [...tasks].sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0)).slice(0, 3)
+                ).map(task => (
+                  <div className={`task-card ${task.done ? "done" : ""} ${task.pinned ? "pinned" : ""}`} key={task.id}>
                     <label style={{ display: "flex", alignItems: "flex-start", gap: 10, flex: 1, minWidth: 0, cursor: "pointer" }}>
                       <input
                         type="checkbox"
@@ -961,20 +986,55 @@ export default function App() {
                         onChange={() => toggleTask(task.id)}
                         style={{ width: 16, height: 16, flexShrink: 0, accentColor: "var(--brand)", cursor: "pointer", marginTop: 2 }}
                       />
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <strong>{task.title}</strong>
+                      <div style={{ flex: 1, minWidth: 0 }} onClick={e => e.preventDefault()}>
+                        {editingTaskId === task.id ? (
+                          <input
+                            className="task-edit-input"
+                            value={editingTaskTitle}
+                            autoFocus
+                            onChange={e => setEditingTaskTitle(e.target.value)}
+                            onKeyDown={e => {
+                              if (e.key === "Enter") commitEditTask(task.id);
+                              if (e.key === "Escape") cancelEditTask();
+                            }}
+                            onBlur={() => commitEditTask(task.id)}
+                            onClick={e => e.stopPropagation()}
+                          />
+                        ) : (
+                          <strong>{task.title}</strong>
+                        )}
                         <span>{task.owner} · {task.due} · {task.source}</span>
                       </div>
                     </label>
-                    <button
-                      className="mail-trash-btn"
-                      style={{ flexShrink: 0, alignSelf: "center" }}
-                      onClick={() => handleDeleteTask(task.id, task.title)}
-                      title="할 일 삭제"
-                      aria-label="할 일 삭제"
-                    >
-                      🗑️
-                    </button>
+                    <div style={{ display: "flex", alignItems: "center", gap: 2, flexShrink: 0 }}>
+                      <button
+                        className="mail-trash-btn"
+                        style={{ alignSelf: "center" }}
+                        onClick={() => startEditTask(task.id, task.title)}
+                        title="제목 수정"
+                        aria-label="제목 수정"
+                      >
+                        ✏️
+                      </button>
+                      <button
+                        className={`mail-trash-btn ${task.pinned ? "pin-active" : ""}`}
+                        style={{ alignSelf: "center" }}
+                        onClick={() => handlePinTask(task.id)}
+                        title={task.pinned ? "고정 해제" : "상단 고정"}
+                        aria-label="상단 고정"
+                      >
+                        📌
+                      </button>
+                      <button
+                        className="mail-trash-btn"
+                        style={{ alignSelf: "center" }}
+                        onClick={() => handleDeleteTask(task.id, task.title)}
+                        title="할 일 삭제"
+                        aria-label="할 일 삭제"
+                      >
+                        🗑️
+                      </button>
+                    </div>
                   </div>
                 ))}
                 {tasks.length > 3 && (

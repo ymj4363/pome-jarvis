@@ -1525,3 +1525,30 @@ textarea {
   .task-add-row { flex-wrap: wrap; }
   .task-add-date { width: 100%; }
 }
+
+/* ── 할 일 인라인 편집 인풋 ─────────────────────────────────────── */
+.task-edit-input {
+  display: block;
+  width: 100%;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink-9);
+  background: var(--white);
+  border: 1.5px solid var(--brand);
+  border-radius: 4px;
+  padding: 2px 6px;
+  margin-bottom: 2px;
+  outline: none;
+  box-shadow: 0 0 0 3px var(--brand-light);
+}
+
+/* ── 할 일 상단 고정 ─────────────────────────────────────────────── */
+.task-card.pinned {
+  border-left: 3px solid #f59e0b;
+  background: #fffbf0;
+}
+.task-card.pinned:hover { background: #fff7e0; }
+.mail-trash-btn.pin-active {
+  opacity: 1 !important;
+  filter: none;
+}
