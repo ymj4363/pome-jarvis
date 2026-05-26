@@ -26,7 +26,7 @@ const STATE_KEY    = "pome.oauth_state";
 const CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID ?? "";
 
 const SCOPES = [
-  "https://www.googleapis.com/auth/gmail.readonly",
+  "https://www.googleapis.com/auth/gmail.modify", // 읽기 + 휴지통 이동 (readonly 대체)
   "https://www.googleapis.com/auth/gmail.send",
   "https://www.googleapis.com/auth/calendar.readonly",
   "https://www.googleapis.com/auth/calendar.events",
