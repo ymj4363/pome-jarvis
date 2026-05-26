@@ -964,7 +964,7 @@ textarea {
 
 @media (max-width: 640px) {
   :root { --pad: 14px; }
-  .content { gap: 14px; }
+  .content { gap: 14px; padding-bottom: calc(var(--pad) + 68px); }
   .hero { padding: 22px 20px; }
   .hero-text h1 { font-size: 24px; }
   .hero-metrics { flex-wrap: wrap; }
@@ -977,6 +977,200 @@ textarea {
   .log-row { grid-template-columns: auto minmax(0, 1fr); }
   .log-row time { display: none; }
   .mail-list { grid-template-columns: 1fr; }
-  .toast-container { bottom: 12px; right: 12px; left: 12px; }
+  .toast-container { bottom: 72px; right: 12px; left: 12px; }
   .toast { max-width: 100%; }
+  .sidebar { display: none; }
+}
+
+/* ── Mail card — clickable cursor ───────────────────────────────── */
+.mail-card {
+  cursor: pointer;
+}
+.mail-card:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+
+/* ── Mail Modal ──────────────────────────────────────────────────── */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 300;
+  background: rgba(16, 24, 40, .50);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  animation: fade-in .15s ease;
+  backdrop-filter: blur(3px);
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.modal {
+  background: var(--white);
+  border-radius: var(--r-xl);
+  box-shadow: var(--sh-xl);
+  width: 100%;
+  max-width: 660px;
+  max-height: 82vh;
+  display: flex;
+  flex-direction: column;
+  animation: modal-in .2s var(--ease);
+  overflow: hidden;
+}
+
+@keyframes modal-in {
+  from { transform: scale(.94) translateY(12px); opacity: 0; }
+  to   { transform: scale(1) translateY(0);      opacity: 1; }
+}
+
+.modal-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 22px 24px 16px;
+  border-bottom: 1px solid var(--ink-2);
+}
+
+.modal-meta {
+  margin-top: 5px;
+  font-size: 12px;
+  color: var(--ink-5);
+}
+
+.modal-close {
+  flex-shrink: 0;
+  font-size: 12px;
+  min-height: 32px;
+  padding: 0 12px;
+  margin-top: 2px;
+}
+
+.modal-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px 24px;
+  overscroll-behavior: contain;
+}
+
+.mail-body-text {
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-family: inherit;
+  font-size: 13px;
+  line-height: 1.85;
+  color: var(--ink-7);
+  margin: 0;
+}
+
+.modal-footer {
+  padding: 14px 24px;
+  border-top: 1px solid var(--ink-2);
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+@media (max-width: 640px) {
+  .modal-overlay { padding: 0; align-items: flex-end; }
+  .modal { max-width: 100%; max-height: 90vh; border-radius: var(--r-xl) var(--r-xl) 0 0; }
+}
+
+/* ── AI 브리핑 ───────────────────────────────────────────────────── */
+.briefing-summary {
+  margin-top: 14px;
+  font-size: 13px;
+  line-height: 1.8;
+  color: var(--ink-7);
+  padding: 14px 16px;
+  background: var(--brand-light);
+  border-radius: var(--r-sm);
+  border: 1px solid var(--brand-muted);
+}
+
+.briefing-section {
+  margin-top: 8px;
+}
+
+.briefing-label {
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--ink-6);
+  letter-spacing: .03em;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+
+.briefing-list {
+  display: grid;
+  gap: 5px;
+  padding-left: 18px;
+  font-size: 13px;
+  color: var(--ink-7);
+  line-height: 1.65;
+}
+
+/* ── Mobile Bottom Nav ───────────────────────────────────────────── */
+.mobile-nav {
+  display: none;
+}
+
+@media (max-width: 640px) {
+  .mobile-nav {
+    display: flex;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 200;
+    background: var(--white);
+    border-top: 1px solid var(--ink-2);
+    padding: 6px 4px env(safe-area-inset-bottom, 6px);
+    box-shadow: 0 -4px 20px rgba(0, 0, 0, .08);
+  }
+  .mobile-nav a {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    padding: 4px 2px;
+    text-decoration: none;
+    color: var(--ink-5);
+    border-radius: var(--r-sm);
+    transition: color var(--t), background var(--t);
+    position: relative;
+  }
+  .mobile-nav a.active {
+    color: var(--brand);
+  }
+  .mobile-nav-icon { font-size: 20px; }
+  .mobile-nav-label {
+    font-size: 10px;
+    font-weight: 500;
+    white-space: nowrap;
+  }
+  .mobile-nav-badge {
+    position: absolute;
+    top: 2px;
+    right: calc(50% - 18px);
+    background: var(--brand);
+    color: #fff;
+    font-size: 9px;
+    font-weight: 700;
+    min-width: 14px;
+    height: 14px;
+    border-radius: var(--r-f);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 3px;
+    line-height: 1;
+  }
 }

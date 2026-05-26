@@ -1,4 +1,11 @@
-import type { DraftReplyResult, Mail, MeetingActionResult, Task } from "../types";
+import type {
+  BriefingResult,
+  CalendarEvent,
+  DraftReplyResult,
+  Mail,
+  MeetingActionResult,
+  Task
+} from "../types";
 import { sentenceToTask } from "./meetingService";
 
 type ApiDraftReplyResponse = DraftReplyResult & {
@@ -9,6 +16,15 @@ type ApiExtractActionsResponse = {
   tasks: Array<Pick<Task, "title" | "owner" | "due">>;
   evidence: string[];
   source?: "openai" | "fallback";
+};
+
+type ApiBriefingResponse = {
+  ok?: boolean;
+  fallback?: boolean;
+  summary?: string;
+  highlights?: string[];
+  actions?: string[];
+  error?: string;
 };
 
 const wait = (ms: number) => new Promise(resolve => window.setTimeout(resolve, ms));
@@ -76,9 +92,9 @@ export async function extractMeetingActions(meetingText: string): Promise<Meetin
     return {
       tasks: result.tasks.map(task => ({
         ...task,
-        id: crypto.randomUUID(),
+        id:     crypto.randomUUID(),
         source: "meeting",
-        done: false
+        done:   false
       })),
       evidence: result.evidence
     };
@@ -88,3 +104,28 @@ export async function extractMeetingActions(meetingText: string): Promise<Meetin
   }
 }
 
+/* ── AI 브리핑 ────────────────────────────────────────────────────── */
+
+export async function fetchBriefing(
+  mails:     Mail[],
+  events:    CalendarEvent[],
+  userName?: string
+): Promise<BriefingResult | null> {
+  try {
+    const result = await postJson<ApiBriefingResponse>("/api/assistant/briefing", {
+      mails:    mails.map(m => ({ subject: m.subject, sender: m.sender, label: m.label, summary: m.summary })),
+      events:   events.map(e => ({ title: e.title, time: e.time, location: e.location })),
+      userName: userName ?? "사용자"
+    });
+
+    if (result.fallback || !result.ok) return null;
+
+    return {
+      summary:    result.summary    ?? "",
+      highlights: result.highlights ?? [],
+      actions:    result.actions    ?? []
+    };
+  } catch {
+    return null;
+  }
+}

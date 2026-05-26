@@ -8,9 +8,9 @@ import {
   initialTasks
 } from "./data";
 import { createReplyDraftApproval, decideApproval as decideApprovalState } from "./services/approvalService";
-import { draftReply, extractMeetingActions } from "./services/assistantService";
-import { fetchCalendarEvents } from "./services/calendarService";
-import { fetchGmailMessages } from "./services/gmailService";
+import { draftReply, extractMeetingActions, fetchBriefing } from "./services/assistantService";
+import { createCalendarEvent, fetchCalendarEvents } from "./services/calendarService";
+import { fetchGmailMessages, fetchMailBody, fetchMoreMails, sendEmail } from "./services/gmailService";
 import {
   getAuthState,
   handleOAuthCallback,
@@ -20,7 +20,7 @@ import {
   type AuthState
 } from "./services/googleAuthService";
 import { createLog } from "./services/logService";
-import type { Approval, CalendarEvent, LogEntry, Mail, Task } from "./types";
+import type { Approval, BriefingResult, CalendarEvent, LogEntry, Mail, Task } from "./types";
 import { usePersistentState } from "./usePersistentState";
 
 /* ── 상수 ───────────────────────────────────────────────────────── */
@@ -28,23 +28,23 @@ import { usePersistentState } from "./usePersistentState";
 type Toast = { id: string; message: string; type: "success" | "error" | "info" };
 
 const LABEL_TEXT: Record<string, string> = {
-  urgent: "긴급",
+  urgent:       "긴급",
   reply_needed: "답장 필요",
-  reference: "참고"
+  reference:    "참고"
 };
 
 const RISK_TEXT: Record<string, string> = {
-  low: "위험 낮음",
+  low:    "위험 낮음",
   medium: "위험 중간",
-  high: "위험 높음"
+  high:   "위험 높음"
 };
 
 const NAV_ITEMS = [
-  { id: "briefing", icon: "📊", label: "오늘의 운영판" },
-  { id: "mail",     icon: "✉️",  label: "이메일 요약" },
-  { id: "meeting",  icon: "📝",  label: "회의록 액션" },
-  { id: "approval", icon: "✅",  label: "승인 대기함" },
-  { id: "log",      icon: "📋",  label: "실행 로그" }
+  { id: "briefing", icon: "📊", label: "운영판" },
+  { id: "mail",     icon: "✉️",  label: "메일" },
+  { id: "meeting",  icon: "📝",  label: "회의록" },
+  { id: "approval", icon: "✅",  label: "승인" },
+  { id: "log",      icon: "📋",  label: "로그" }
 ];
 
 /* ── Google 아이콘 ──────────────────────────────────────────────── */
@@ -65,19 +65,35 @@ function GoogleIcon() {
 export default function App() {
   /* ── State ──────────────────────────────────────────────────── */
 
-  const [mails, setMails] = useState<Mail[]>(initialMails);
+  const [mails, setMails]   = useState<Mail[]>(initialMails);
   const [events, setEvents] = useState<CalendarEvent[]>(initialEvents);
-  const [tasks, setTasks]       = usePersistentState<Task[]>("pome.tasks", initialTasks);
+  const [tasks, setTasks]         = usePersistentState<Task[]>("pome.tasks", initialTasks);
   const [approvals, setApprovals] = usePersistentState<Approval[]>("pome.approvals", initialApprovals);
   const [logs, setLogs]           = usePersistentState<LogEntry[]>("pome.logs", initialLogs);
   const [meetingText, setMeetingText] = usePersistentState("pome.meetingText", defaultMeetingText);
   const [draftMailId, setDraftMailId] = usePersistentState("pome.draftMailId", initialMails[1]?.id ?? "");
 
   const [assistantBusy, setAssistantBusy] = useState<"draft" | "meeting" | null>(null);
-  const [auth, setAuth]           = useState<AuthState | null>(null);
-  const [dataLoading, setDataLoading] = useState(false);
-  const [toasts, setToasts]       = useState<Toast[]>([]);
+  const [auth, setAuth]             = useState<AuthState | null>(null);
+  const [dataLoading, setDataLoading]   = useState(false);
+  const [toasts, setToasts]         = useState<Toast[]>([]);
   const [activeSection, setActiveSection] = useState("briefing");
+
+  // Mail modal
+  const [selectedMail, setSelectedMail] = useState<Mail | null>(null);
+  const [mailBody, setMailBody]           = useState("");
+  const [mailBodyLoading, setMailBodyLoading] = useState(false);
+
+  // Pagination
+  const [nextPageToken, setNextPageToken]     = useState<string | null>(null);
+  const [moreMailsLoading, setMoreMailsLoading] = useState(false);
+
+  // AI 브리핑
+  const [briefing, setBriefing]           = useState<BriefingResult | null>(null);
+  const [briefingLoading, setBriefingLoading] = useState(false);
+
+  // Approval execution
+  const [executingApprovalId, setExecutingApprovalId] = useState<string | null>(null);
 
   const approvalRef = useRef<HTMLElement>(null);
 
@@ -100,18 +116,23 @@ export default function App() {
 
   /* ── 실제 데이터 로드 ───────────────────────────────────────── */
 
-  const loadRealData = useCallback(async (accessToken: string) => {
+  const loadRealData = useCallback(async (accessToken: string, userName?: string) => {
     setDataLoading(true);
+    setBriefing(null);
     try {
       const [gmailResult, calendarResult] = await Promise.allSettled([
         fetchGmailMessages(accessToken),
         fetchCalendarEvents(accessToken)
       ]);
 
+      let loadedMails: Mail[]          = mails;
+      let loadedEvents: CalendarEvent[] = events;
       let loaded = 0;
 
       if (gmailResult.status === "fulfilled") {
-        setMails(gmailResult.value);
+        setMails(gmailResult.value.mails);
+        setNextPageToken(gmailResult.value.nextPageToken ?? null);
+        loadedMails = gmailResult.value.mails;
         loaded++;
       } else {
         showToast("Gmail 메일을 불러오지 못했습니다.", "error");
@@ -119,6 +140,7 @@ export default function App() {
 
       if (calendarResult.status === "fulfilled") {
         setEvents(calendarResult.value);
+        loadedEvents = calendarResult.value;
         loaded++;
       } else {
         showToast("캘린더 일정을 불러오지 못했습니다.", "error");
@@ -129,21 +151,27 @@ export default function App() {
           `실제 데이터 연동 완료 (Gmail${gmailResult.status === "fulfilled" ? " ✓" : " ✗"}, 캘린더${calendarResult.status === "fulfilled" ? " ✓" : " ✗"})`,
           "success"
         );
+
+        // AI 브리핑 생성 (백그라운드)
+        setBriefingLoading(true);
+        fetchBriefing(loadedMails, loadedEvents, userName)
+          .then(result => setBriefing(result))
+          .finally(() => setBriefingLoading(false));
       }
     } finally {
       setDataLoading(false);
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [showToast]);
 
   /* ── 초기 마운트: OAuth 콜백 감지 or 기존 세션 복원 ─────────── */
 
   useEffect(() => {
-    const url    = new URL(window.location.href);
-    const code   = url.searchParams.get("code");
-    const state  = url.searchParams.get("state");
-    const error  = url.searchParams.get("error");
+    const url   = new URL(window.location.href);
+    const code  = url.searchParams.get("code");
+    const state = url.searchParams.get("state");
+    const error = url.searchParams.get("error");
 
-    // Google에서 돌아온 경우 — URL 파라미터 즉시 제거
     if (code || error) {
       window.history.replaceState({}, "", window.location.pathname);
     }
@@ -157,7 +185,7 @@ export default function App() {
       handleOAuthCallback(code, state)
         .then(newAuth => {
           setAuth(newAuth);
-          return loadRealData(newAuth.accessToken);
+          return loadRealData(newAuth.accessToken, newAuth.user.name);
         })
         .catch(err => {
           console.error("OAuth callback error:", err);
@@ -166,15 +194,14 @@ export default function App() {
       return;
     }
 
-    // 기존 세션 복원
     const existing = getAuthState();
     if (existing) {
       setAuth(existing);
-      loadRealData(existing.accessToken);
+      loadRealData(existing.accessToken, existing.user.name);
     }
   }, [loadRealData, showToast]);
 
-  /* ── 활성 섹션 추적 (Intersection Observer) ─────────────────── */
+  /* ── 활성 섹션 추적 ─────────────────────────────────────────── */
 
   useEffect(() => {
     const elements = NAV_ITEMS
@@ -195,26 +222,80 @@ export default function App() {
     return () => observer.disconnect();
   }, []);
 
+  /* ── ESC 키로 모달 닫기 ─────────────────────────────────────── */
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") handleCloseMail();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  });
+
   /* ── 핸들러 ─────────────────────────────────────────────────── */
 
   const addLog = (entry: Omit<LogEntry, "id" | "createdAt">) => {
     setLogs(current => [createLog(entry), ...current]);
   };
 
-  const handleLogin = () => startOAuth().catch(() => showToast("로그인 시작에 실패했습니다.", "error"));
-
+  const handleLogin  = () => startOAuth().catch(() => showToast("로그인 시작에 실패했습니다.", "error"));
   const handleLogout = () => {
     logout();
     setAuth(null);
     setMails(initialMails);
     setEvents(initialEvents);
+    setNextPageToken(null);
+    setBriefing(null);
     showToast("로그아웃했습니다.", "info");
   };
 
   const handleRefreshData = () => {
     if (!auth) return;
-    loadRealData(auth.accessToken);
+    loadRealData(auth.accessToken, auth.user.name);
   };
+
+  /* ── 메일 모달 ──────────────────────────────────────────────── */
+
+  const handleMailClick = async (mail: Mail) => {
+    setSelectedMail(mail);
+    setMailBody("");
+    if (auth) {
+      setMailBodyLoading(true);
+      try {
+        const body = await fetchMailBody(auth.accessToken, mail.id);
+        setMailBody(body || mail.summary);
+      } catch {
+        setMailBody(mail.body || mail.summary || "본문을 불러오지 못했습니다.");
+      } finally {
+        setMailBodyLoading(false);
+      }
+    } else {
+      setMailBody(mail.body || mail.summary);
+    }
+  };
+
+  const handleCloseMail = () => {
+    setSelectedMail(null);
+    setMailBody("");
+  };
+
+  /* ── 더 보기 (페이지네이션) ─────────────────────────────────── */
+
+  const handleLoadMoreMails = async () => {
+    if (!auth || !nextPageToken) return;
+    setMoreMailsLoading(true);
+    try {
+      const result = await fetchMoreMails(auth.accessToken, nextPageToken);
+      setMails(current => [...current, ...result.mails]);
+      setNextPageToken(result.nextPageToken ?? null);
+    } catch {
+      showToast("추가 메일을 불러오지 못했습니다.", "error");
+    } finally {
+      setMoreMailsLoading(false);
+    }
+  };
+
+  /* ── 답장 초안 생성 ─────────────────────────────────────────── */
 
   const createReplyDraft = async () => {
     const mail = mails.find(m => m.id === draftMailId);
@@ -239,6 +320,8 @@ export default function App() {
     }
   };
 
+  /* ── 회의록 액션 추출 ───────────────────────────────────────── */
+
   const extractActions = async () => {
     setAssistantBusy("meeting");
     try {
@@ -255,19 +338,66 @@ export default function App() {
     }
   };
 
-  const decideApproval = (approvalId: string, status: "approved" | "rejected") => {
+  /* ── 승인 결정 (+ 실제 실행) ────────────────────────────────── */
+
+  const decideApproval = async (approvalId: string, status: "approved" | "rejected") => {
     const item = approvals.find(a => a.id === approvalId);
     if (!item) return;
+
+    // 상태 먼저 업데이트
     setApprovals(current => decideApprovalState(current, approvalId, status));
+
     addLog({
       action: status === "approved" ? "approval.approved" : "approval.rejected",
       detail: `${item.title} 항목을 ${status === "approved" ? "승인" : "거절"}했습니다.`,
       status: status === "approved" ? "success" : "rejected"
     });
+
     showToast(
-      status === "approved" ? `"${item.title}" 승인했습니다.` : `"${item.title}" 거절했습니다.`,
+      status === "approved"
+        ? `"${item.title}" 승인했습니다.`
+        : `"${item.title}" 거절했습니다.`,
       status === "approved" ? "success" : "info"
     );
+
+    // 승인 + 로그인 상태 = 실제 실행
+    if (status !== "approved" || !auth) return;
+
+    setExecutingApprovalId(approvalId);
+    try {
+      if (item.type === "email_send" && item.recipientEmail && item.draft) {
+        await sendEmail(
+          auth.accessToken,
+          item.recipientEmail,
+          item.replySubject ?? item.title,
+          item.draft
+        );
+        showToast(`📧 메일 발송 완료: ${item.recipientEmail}`, "success");
+        addLog({
+          action: "email.sent",
+          detail: `${item.recipientEmail}에게 "${item.replySubject ?? item.title}" 발송 완료.`,
+          status: "success"
+        });
+      } else if (item.type === "calendar_change" && item.calendarEventData) {
+        await createCalendarEvent(auth.accessToken, item.calendarEventData);
+        showToast(`📅 일정 생성 완료: ${item.calendarEventData.title}`, "success");
+        addLog({
+          action: "calendar.created",
+          detail: `"${item.calendarEventData.title}" 일정을 Google 캘린더에 추가했습니다.`,
+          status: "success"
+        });
+      }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "알 수 없는 오류";
+      showToast(`실행 실패: ${msg}`, "error");
+      addLog({
+        action: "execution.failed",
+        detail: `${item.title} 실행 실패: ${msg}`,
+        status: "failed"
+      });
+    } finally {
+      setExecutingApprovalId(null);
+    }
   };
 
   const toggleTask = (taskId: string) => {
@@ -321,7 +451,6 @@ export default function App() {
         </nav>
 
         <div className="sidebar-footer">
-          {/* 로그인 상태 */}
           {auth ? (
             <>
               <div className="user-info">
@@ -342,7 +471,7 @@ export default function App() {
                 disabled={dataLoading}
                 title="실제 데이터 새로 고침"
               >
-                {dataLoading ? <span className="spinner" /> : "🔄"} 데이터 새로고침
+                {dataLoading ? <span className="spinner" /> : "🔄"} 새로고침
               </button>
               <button className="reset-button" onClick={handleLogout}>로그아웃</button>
             </>
@@ -367,7 +496,6 @@ export default function App() {
 
       {/* ── Content ────────────────────────────────────────────── */}
       <main className="content">
-        {/* 데이터 로딩 바 */}
         {dataLoading && <div className="data-loading-bar" />}
 
         {/* Hero — 오늘의 운영판 */}
@@ -423,29 +551,65 @@ export default function App() {
             )}
           </article>
 
-          {/* 추천 액션 */}
+          {/* AI 브리핑 / 추천 액션 */}
           <article className="panel">
-            <h2>추천 액션</h2>
-            <div className="stack">
-              {unreadImportant.filter(m => m.label === "urgent").length > 0 && (
-                <div className="notice urgent">
-                  긴급 메일 {unreadImportant.filter(m => m.label === "urgent").length}건을 확인하세요.
-                </div>
+            <h2 style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              {briefing ? "AI 브리핑" : "추천 액션"}
+              {briefingLoading && (
+                <span
+                  className="spinner"
+                  style={{
+                    borderColor: "rgba(0,0,0,.12)",
+                    borderTopColor: "var(--brand)",
+                    width: 13,
+                    height: 13
+                  }}
+                />
               )}
-              {unreadImportant.filter(m => m.label === "reply_needed").length > 0 && (
-                <div className="notice">
-                  답장이 필요한 메일 {unreadImportant.filter(m => m.label === "reply_needed").length}건이 있습니다.
-                </div>
-              )}
-              {pendingApprovals.length > 0 && (
-                <div className="notice">
-                  승인 대기함에 {pendingApprovals.length}건이 있습니다.
-                </div>
-              )}
-              {unreadImportant.length === 0 && pendingApprovals.length === 0 && (
-                <div className="notice">오늘 중요한 메일이나 대기 항목이 없습니다. 👍</div>
-              )}
-            </div>
+            </h2>
+
+            {briefing ? (
+              <div className="stack">
+                <p className="briefing-summary">{briefing.summary}</p>
+                {briefing.highlights.length > 0 && (
+                  <div className="briefing-section">
+                    <strong className="briefing-label">📌 주요 포인트</strong>
+                    <ul className="briefing-list">
+                      {briefing.highlights.map((h, i) => <li key={i}>{h}</li>)}
+                    </ul>
+                  </div>
+                )}
+                {briefing.actions.length > 0 && (
+                  <div className="briefing-section">
+                    <strong className="briefing-label">⚡ 권장 액션</strong>
+                    <ul className="briefing-list">
+                      {briefing.actions.map((a, i) => <li key={i}>{a}</li>)}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            ) : !briefingLoading && (
+              <div className="stack">
+                {unreadImportant.filter(m => m.label === "urgent").length > 0 && (
+                  <div className="notice urgent">
+                    긴급 메일 {unreadImportant.filter(m => m.label === "urgent").length}건을 확인하세요.
+                  </div>
+                )}
+                {unreadImportant.filter(m => m.label === "reply_needed").length > 0 && (
+                  <div className="notice">
+                    답장 필요한 메일 {unreadImportant.filter(m => m.label === "reply_needed").length}건이 있습니다.
+                  </div>
+                )}
+                {pendingApprovals.length > 0 && (
+                  <div className="notice">
+                    승인 대기함에 {pendingApprovals.length}건이 있습니다.
+                  </div>
+                )}
+                {unreadImportant.length === 0 && pendingApprovals.length === 0 && (
+                  <div className="notice">오늘 중요한 메일이나 대기 항목이 없습니다. 👍</div>
+                )}
+              </div>
+            )}
           </article>
 
           {/* 열린 할 일 */}
@@ -483,9 +647,7 @@ export default function App() {
           <div className="section-head">
             <div>
               <p className="eyebrow">이메일 요약</p>
-              <h2>
-                {auth ? "Gmail 메일함" : "중요도와 다음 액션을 분류했습니다."}
-              </h2>
+              <h2>{auth ? "Gmail 메일함" : "중요도와 다음 액션을 분류했습니다."}</h2>
             </div>
             <div className="draft-control">
               <select value={draftMailId} onChange={e => setDraftMailId(e.target.value)}>
@@ -510,19 +672,44 @@ export default function App() {
               <p>받은 메일이 없습니다.</p>
             </div>
           ) : (
-            <div className="mail-list">
-              {mails.map(mail => (
-                <article className={`mail-card ${mail.label}`} key={mail.id}>
-                  <div className="mail-topline">
-                    <span className={`pill ${mail.label}`}>{LABEL_TEXT[mail.label]}</span>
-                    <time>{mail.receivedAt}</time>
-                  </div>
-                  <h3>{mail.subject}</h3>
-                  <p>{mail.summary}</p>
-                  <small>{mail.sender}</small>
-                </article>
-              ))}
-            </div>
+            <>
+              <div className="mail-list">
+                {mails.map(mail => (
+                  <article
+                    className={`mail-card ${mail.label}`}
+                    key={mail.id}
+                    onClick={() => handleMailClick(mail)}
+                    role="button"
+                    tabIndex={0}
+                    onKeyDown={e => e.key === "Enter" && handleMailClick(mail)}
+                    title="클릭해서 본문 보기"
+                  >
+                    <div className="mail-topline">
+                      <span className={`pill ${mail.label}`}>{LABEL_TEXT[mail.label]}</span>
+                      <time>{mail.receivedAt}</time>
+                    </div>
+                    <h3>{mail.subject}</h3>
+                    <p>{mail.summary}</p>
+                    <small>{mail.sender}</small>
+                  </article>
+                ))}
+              </div>
+
+              {/* 더 보기 */}
+              {auth && nextPageToken && (
+                <div style={{ marginTop: 16, textAlign: "center" }}>
+                  <button
+                    className="ghost"
+                    disabled={moreMailsLoading}
+                    onClick={handleLoadMoreMails}
+                  >
+                    {moreMailsLoading ? (
+                      <><span className="spinner" />불러오는 중…</>
+                    ) : "📬 메일 더 보기"}
+                  </button>
+                </div>
+              )}
+            </>
           )}
         </section>
 
@@ -621,6 +808,11 @@ export default function App() {
                     </div>
                     <h3>{approval.title}</h3>
                     <p>{approval.description}</p>
+                    {approval.recipientEmail && approval.status === "pending" && (
+                      <p style={{ fontSize: 12, color: "var(--brand)", marginTop: 4 }}>
+                        📧 수신자: {approval.recipientEmail}
+                      </p>
+                    )}
                     {approval.draft && (
                       <pre className="draft-preview">{approval.draft}</pre>
                     )}
@@ -637,12 +829,26 @@ export default function App() {
                       {approval.status === "pending"  && "대기 중"}
                       {approval.status === "approved" && "✅ 승인됨"}
                       {approval.status === "rejected" && "✕ 거절됨"}
+                      {approval.executedAt && ` · 실행: ${approval.executedAt}`}
                     </small>
                   </div>
                   {approval.status === "pending" && (
                     <div className="approval-actions">
-                      <button onClick={() => decideApproval(approval.id, "approved")}>✅ 승인</button>
-                      <button className="ghost" onClick={() => decideApproval(approval.id, "rejected")}>✕ 거절</button>
+                      <button
+                        disabled={executingApprovalId === approval.id}
+                        onClick={() => decideApproval(approval.id, "approved")}
+                      >
+                        {executingApprovalId === approval.id
+                          ? <><span className="spinner" />실행 중</>
+                          : "✅ 승인"}
+                      </button>
+                      <button
+                        className="ghost"
+                        disabled={executingApprovalId === approval.id}
+                        onClick={() => decideApproval(approval.id, "rejected")}
+                      >
+                        ✕ 거절
+                      </button>
                     </div>
                   )}
                 </article>
@@ -674,6 +880,23 @@ export default function App() {
         </section>
       </main>
 
+      {/* ── Mobile Bottom Nav ───────────────────────────────────── */}
+      <nav className="mobile-nav" aria-label="모바일 탐색">
+        {NAV_ITEMS.map(item => (
+          <a
+            key={item.id}
+            href={`#${item.id}`}
+            className={activeSection === item.id ? "active" : ""}
+          >
+            <span className="mobile-nav-icon">{item.icon}</span>
+            <span className="mobile-nav-label">{item.label}</span>
+            {item.id === "approval" && pendingApprovals.length > 0 && (
+              <span className="mobile-nav-badge">{pendingApprovals.length}</span>
+            )}
+          </a>
+        ))}
+      </nav>
+
       {/* ── Toast ──────────────────────────────────────────────── */}
       <div className="toast-container" aria-live="polite">
         {toasts.map(toast => (
@@ -687,6 +910,74 @@ export default function App() {
           </div>
         ))}
       </div>
+
+      {/* ── Mail Modal ──────────────────────────────────────────── */}
+      {selectedMail && (
+        <div
+          className="modal-overlay"
+          onClick={handleCloseMail}
+          role="dialog"
+          aria-modal="true"
+          aria-label="메일 본문"
+        >
+          <div className="modal" onClick={e => e.stopPropagation()}>
+            <div className="modal-head">
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <span className={`pill ${selectedMail.label}`}>
+                  {LABEL_TEXT[selectedMail.label]}
+                </span>
+                <h2 style={{ marginTop: 8, fontSize: 16, lineHeight: 1.35 }}>
+                  {selectedMail.subject}
+                </h2>
+                <p className="modal-meta">
+                  {selectedMail.sender} · {selectedMail.receivedAt}
+                </p>
+              </div>
+              <button className="ghost modal-close" onClick={handleCloseMail}>
+                ✕ 닫기
+              </button>
+            </div>
+
+            <div className="modal-body">
+              {mailBodyLoading ? (
+                <div style={{ textAlign: "center", padding: "32px 0" }}>
+                  <span
+                    className="spinner"
+                    style={{
+                      borderColor: "rgba(0,0,0,.12)",
+                      borderTopColor: "var(--brand)",
+                      width: 24,
+                      height: 24,
+                      borderWidth: 3
+                    }}
+                  />
+                  <p style={{ marginTop: 12, fontSize: 13, color: "var(--ink-5)" }}>
+                    본문 불러오는 중…
+                  </p>
+                </div>
+              ) : (
+                <pre className="mail-body-text">{mailBody || selectedMail.summary}</pre>
+              )}
+            </div>
+
+            <div className="modal-footer">
+              <button
+                className="ghost"
+                onClick={() => {
+                  setDraftMailId(selectedMail.id);
+                  handleCloseMail();
+                  setTimeout(() => {
+                    document.getElementById("mail")?.scrollIntoView({ behavior: "smooth" });
+                  }, 100);
+                }}
+              >
+                ✉️ 이 메일 답장 초안 만들기
+              </button>
+              <button onClick={handleCloseMail}>닫기</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

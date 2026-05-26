@@ -26,6 +26,15 @@ export type Task = {
   done: boolean;
 };
 
+export type CalendarEventData = {
+  title: string;
+  startDateTime: string; // ISO 8601
+  endDateTime: string;   // ISO 8601
+  description?: string;
+  location?: string;
+  timeZone?: string;
+};
+
 export type Approval = {
   id: string;
   type: "email_send" | "calendar_change" | "doc_share" | "task_create";
@@ -36,6 +45,17 @@ export type Approval = {
   risk: "low" | "medium" | "high";
   createdAt: string;
   status: "pending" | "approved" | "rejected";
+  // 실제 실행 데이터
+  recipientEmail?: string;     // email_send: 수신자 주소
+  replySubject?: string;       // email_send: 제목
+  calendarEventData?: CalendarEventData; // calendar_change: 생성할 일정
+  executedAt?: string;         // 실제 실행된 시각
+};
+
+export type BriefingResult = {
+  summary: string;
+  highlights: string[];
+  actions: string[];
 };
 
 export type DraftReplyResult = {

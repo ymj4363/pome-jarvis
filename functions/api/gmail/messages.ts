@@ -13,6 +13,7 @@ type Env = {
 
 interface GmailListResponse {
   messages?: Array<{ id: string }>;
+  nextPageToken?: string;
 }
 
 interface GmailMessage {
@@ -96,11 +97,13 @@ export async function onRequestGet({
   }
   const accessToken = auth.slice(7);
 
+  // pageToken (더 보기 페이지네이션)
+  const reqUrl    = new URL(request.url);
+  const pageToken = reqUrl.searchParams.get("pageToken");
+  const listPath  = `/messages?maxResults=10&labelIds=INBOX${pageToken ? `&pageToken=${encodeURIComponent(pageToken)}` : ""}`;
+
   // 1. 받은편지함 목록 조회 (최근 10건)
-  const listRes = await gmailFetch(
-    "/messages?maxResults=10&labelIds=INBOX",
-    accessToken
-  );
+  const listRes = await gmailFetch(listPath, accessToken);
 
   if (!listRes.ok) {
     const body = await listRes.text();
@@ -110,10 +113,11 @@ export async function onRequestGet({
     );
   }
 
-  const { messages = [] } = (await listRes.json()) as GmailListResponse;
+  const listData = (await listRes.json()) as GmailListResponse;
+  const { messages = [], nextPageToken } = listData;
 
   if (messages.length === 0) {
-    return new Response(JSON.stringify({ mails: [] }), { headers: jsonHeaders });
+    return new Response(JSON.stringify({ mails: [], nextPageToken: undefined }), { headers: jsonHeaders });
   }
 
   // 2. 메일 상세 병렬 조회 (메타데이터 + snippet)
@@ -202,5 +206,5 @@ export async function onRequestGet({
     };
   });
 
-  return new Response(JSON.stringify({ mails }), { headers: jsonHeaders });
+  return new Response(JSON.stringify({ mails, nextPageToken }), { headers: jsonHeaders });
 }
