@@ -1,5 +1,15 @@
 import { useMemo, useState } from "react";
-import { initialApprovals, initialEvents, initialLogs, initialMails, initialTasks } from "./data";
+import {
+  defaultMeetingText,
+  initialApprovals,
+  initialEvents,
+  initialLogs,
+  initialMails,
+  initialTasks
+} from "./data";
+import { createReplyDraftApproval, decideApproval as decideApprovalState } from "./services/approvalService";
+import { createLog } from "./services/logService";
+import { extractMeetingTasks } from "./services/meetingService";
 import type { Approval, LogEntry, Mail, Task } from "./types";
 import { usePersistentState } from "./usePersistentState";
 
@@ -15,28 +25,12 @@ const riskText = {
   high: "높음"
 };
 
-function nowLabel() {
-  return new Intl.DateTimeFormat("ko-KR", {
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit"
-  }).format(new Date());
-}
-
-function makeId(prefix: string) {
-  return `${prefix}-${Date.now()}-${Math.random().toString(16).slice(2)}`;
-}
-
 export default function App() {
   const [mails] = useState<Mail[]>(initialMails);
   const [tasks, setTasks] = usePersistentState<Task[]>("pome.tasks", initialTasks);
   const [approvals, setApprovals] = usePersistentState<Approval[]>("pome.approvals", initialApprovals);
   const [logs, setLogs] = usePersistentState<LogEntry[]>("pome.logs", initialLogs);
-  const [meetingText, setMeetingText] = usePersistentState(
-    "pome.meetingText",
-    "김대리는 금요일까지 Q2 보고서 수치를 업데이트한다. 나는 오늘 중 서버 장애 원인을 정리한다. 다음 회의는 다음 주 화요일 오후 2시로 잡는다."
-  );
+  const [meetingText, setMeetingText] = usePersistentState("pome.meetingText", defaultMeetingText);
   const [draftMailId, setDraftMailId] = usePersistentState("pome.draftMailId", initialMails[1]?.id ?? "");
 
   const unreadImportant = useMemo(
@@ -47,26 +41,14 @@ export default function App() {
   const openTasks = tasks.filter(task => !task.done);
 
   const addLog = (entry: Omit<LogEntry, "id" | "createdAt">) => {
-    setLogs(current => [
-      { ...entry, id: makeId("log"), createdAt: nowLabel() },
-      ...current
-    ]);
+    setLogs(current => [createLog(entry), ...current]);
   };
 
   const createReplyDraft = () => {
     const mail = mails.find(item => item.id === draftMailId);
     if (!mail) return;
 
-    const approval: Approval = {
-      id: makeId("approval"),
-      type: "email_send",
-      title: `${mail.subject} 회신 초안`,
-      description: `${mail.sender}에게 보낼 답장 초안입니다. 실제 발송은 MVP 범위에서 제외하고 승인 로그만 남깁니다.`,
-      risk: mail.label === "urgent" ? "high" : "medium",
-      createdAt: "방금 전",
-      status: "pending"
-    };
-
+    const approval = createReplyDraftApproval(mail);
     setApprovals(current => [approval, ...current]);
     addLog({
       action: "mail.draft_created",
@@ -76,19 +58,7 @@ export default function App() {
   };
 
   const extractMeetingActions = () => {
-    const sentences = meetingText
-      .split(/[.!?。]\s*|\n/)
-      .map(item => item.trim())
-      .filter(Boolean);
-
-    const extracted = sentences.slice(0, 4).map((sentence, index): Task => ({
-      id: makeId("task"),
-      title: sentence,
-      owner: sentence.includes("김대리") ? "김대리" : "나",
-      due: sentence.includes("금요일") ? "금요일" : sentence.includes("오늘") ? "오늘" : "미정",
-      source: "meeting",
-      done: false
-    }));
+    const extracted = extractMeetingTasks(meetingText);
 
     setTasks(current => [...extracted, ...current]);
     addLog({
@@ -102,11 +72,7 @@ export default function App() {
     const item = approvals.find(approval => approval.id === approvalId);
     if (!item) return;
 
-    setApprovals(current =>
-      current.map(approval =>
-        approval.id === approvalId ? { ...approval, status } : approval
-      )
-    );
+    setApprovals(current => decideApprovalState(current, approvalId, status));
     addLog({
       action: status === "approved" ? "approval.approved" : "approval.rejected",
       detail: `${item.title} 항목을 ${status === "approved" ? "승인" : "거절"}했습니다.`,
@@ -116,7 +82,7 @@ export default function App() {
 
   const toggleTask = (taskId: string) => {
     setTasks(current =>
-      current.map(task => task.id === taskId ? { ...task, done: !task.done } : task)
+      current.map(task => (task.id === taskId ? { ...task, done: !task.done } : task))
     );
   };
 
@@ -124,9 +90,7 @@ export default function App() {
     setTasks(initialTasks);
     setApprovals(initialApprovals);
     setLogs(initialLogs);
-    setMeetingText(
-      "김대리는 금요일까지 Q2 보고서 수치를 업데이트한다. 나는 오늘 중 서버 장애 원인을 정리한다. 다음 회의는 다음 주 화요일 오후 2시로 잡는다."
-    );
+    setMeetingText(defaultMeetingText);
     setDraftMailId(initialMails[1]?.id ?? "");
   };
 
@@ -309,3 +273,4 @@ export default function App() {
     </div>
   );
 }
+

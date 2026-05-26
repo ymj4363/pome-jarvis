@@ -1,5 +1,8 @@
 import type { Approval, CalendarEvent, LogEntry, Mail, Task } from "./types";
 
+export const defaultMeetingText =
+  "김대리는 금요일까지 Q2 보고서 수치를 업데이트한다. 나는 오늘 중 서버 장애 원인을 정리한다. 다음 회의는 다음 주 화요일 오후 2시로 잡는다.";
+
 export const initialMails: Mail[] = [
   {
     id: "mail-1",
