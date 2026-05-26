@@ -133,6 +133,9 @@ export default function App() {
   const [showMails, setShowMails] = useState(true);
   const [showTasks, setShowTasks] = useState(true);
 
+  // 할 일 직접 추가
+  const [newTaskTitle, setNewTaskTitle] = useState("");
+
   const approvalRef = useRef<HTMLElement>(null);
 
   /* ── 파생 상태 ──────────────────────────────────────────────── */
@@ -205,15 +208,23 @@ export default function App() {
     if (code || error) window.history.replaceState({}, "", window.location.pathname);
     if (error) { showToast("구글 로그인이 취소되었습니다.", "info"); return; }
 
+    const resetMeeting = () => {
+      setMeetingText(""); setMeetingMode("text");
+      setUploadedFileName(""); setUploadedFileData(null);
+      setVoiceTranscript(""); setVoiceInterim("");
+      recognitionRef.current?.stop(); recognitionRef.current = null;
+      setVoiceRecording(false);
+    };
+
     if (code && state) {
       handleOAuthCallback(code, state)
-        .then(newAuth => { setAuth(newAuth); return loadRealData(newAuth.accessToken, newAuth.user.name); })
+        .then(newAuth => { setAuth(newAuth); resetMeeting(); return loadRealData(newAuth.accessToken, newAuth.user.name); })
         .catch(() => showToast("구글 로그인에 실패했습니다. 다시 시도해 주세요.", "error"));
       return;
     }
 
     const existing = getAuthState();
-    if (existing) { setAuth(existing); loadRealData(existing.accessToken, existing.user.name); }
+    if (existing) { setAuth(existing); resetMeeting(); loadRealData(existing.accessToken, existing.user.name); }
   }, [loadRealData, showToast]);
 
   /* ── 활성 섹션 추적 ─────────────────────────────────────────── */
@@ -519,6 +530,22 @@ export default function App() {
 
   const toggleApprovalCollapse = (id: string) =>
     setCollapsedApprovals(prev => ({ ...prev, [id]: !prev[id] }));
+
+  const handleAddTask = () => {
+    const title = newTaskTitle.trim();
+    if (!title) return;
+    const task: Task = {
+      id:     crypto.randomUUID(),
+      title,
+      owner:  auth?.user.name ?? "나",
+      due:    "미정",
+      source: "manual",
+      done:   false
+    };
+    setTasks(current => [task, ...current]);
+    setNewTaskTitle("");
+    addLog({ action: "task.added", detail: `"${title}" 할 일을 추가했습니다.`, status: "success" });
+  };
 
   const toggleTask = (taskId: string) => {
     setTasks(current => current.map(t => {
@@ -869,6 +896,24 @@ export default function App() {
                 </button>
               </div>
             </div>
+            <div className="task-add-row">
+              <input
+                type="text"
+                className="task-add-input"
+                placeholder="할 일 추가… (Enter)"
+                value={newTaskTitle}
+                onChange={e => setNewTaskTitle(e.target.value)}
+                onKeyDown={e => e.key === "Enter" && handleAddTask()}
+              />
+              <button
+                style={{ flexShrink: 0 }}
+                disabled={!newTaskTitle.trim()}
+                onClick={handleAddTask}
+              >
+                + 추가
+              </button>
+            </div>
+
             {showTasks && (tasks.length === 0 ? (
               <div className="empty-state"><div className="empty-icon">📋</div><p>작업이 없습니다.<br />회의록에서 액션을 추출해 보세요.</p></div>
             ) : (

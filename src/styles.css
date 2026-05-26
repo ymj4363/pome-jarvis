@@ -1476,3 +1476,30 @@ textarea {
   background: linear-gradient(180deg, #f7f8fa 0px, var(--white) 60px);
 }
 .section-log .eyebrow { color: var(--ink-5); font-weight: 600; }
+
+/* ── 할 일 직접 추가 인풋 ────────────────────────────────────────── */
+.task-add-row {
+  display: flex;
+  gap: 8px;
+  margin-top: 14px;
+  margin-bottom: 4px;
+}
+.task-add-input {
+  flex: 1;
+  min-width: 0;
+  font-size: 13px;
+  padding: 0 12px;
+  height: 36px;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--ink-2);
+  background: var(--ink-0);
+  color: var(--ink-7);
+  font-family: inherit;
+  transition: border-color var(--t), box-shadow var(--t);
+}
+.task-add-input:focus {
+  outline: none;
+  border-color: var(--brand);
+  box-shadow: 0 0 0 3px var(--brand-light);
+}
+.task-add-input::placeholder { color: var(--ink-4); }
