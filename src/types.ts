@@ -29,8 +29,9 @@ export type Task = {
 
 export type CalendarEventData = {
   title: string;
-  startDateTime: string; // ISO 8601
-  endDateTime: string;   // ISO 8601
+  startDateTime: string; // ISO 8601 (allDay 시 날짜만 "YYYY-MM-DD")
+  endDateTime: string;   // ISO 8601 (allDay 시 날짜만 "YYYY-MM-DD")
+  allDay?: boolean;       // true면 종일 일정 (Google Calendar date 형식)
   description?: string;
   location?: string;
   timeZone?: string;

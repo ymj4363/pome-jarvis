@@ -64,7 +64,7 @@ export default function App() {
 
   /* ── Core state ─────────────────────────────────────────────── */
   const [mails, setMails]   = useState<Mail[]>(initialMails);
-  const [events, setEvents] = useState<CalendarEvent[]>(initialEvents);
+  const [events, setEvents] = usePersistentState<CalendarEvent[]>("pome.events", initialEvents);
   const [tasks, setTasks]         = usePersistentState<Task[]>("pome.tasks", []);
   const [approvals, setApprovals] = usePersistentState<Approval[]>("pome.approvals", []);
   const [logs, setLogs]           = usePersistentState<LogEntry[]>("pome.logs", []);
@@ -97,7 +97,7 @@ export default function App() {
   const [showEventForm, setShowEventForm] = useState(false);
   const todayStr = new Date().toISOString().split("T")[0];
   const [eventForm, setEventForm] = useState({
-    title: "", date: todayStr, startTime: "", endTime: "", location: ""
+    title: "", date: todayStr, startTime: "", endTime: "", location: "", allDay: false
   });
 
   /* ── 회의록 다중 입력 ────────────────────────────────────────── */
@@ -383,21 +383,36 @@ export default function App() {
   /* ── 일정 추가 (승인 대기함 경유) ───────────────────────────── */
   const handleAddEventApproval = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!eventForm.title || !eventForm.date || !eventForm.startTime || !eventForm.endTime) return;
+    if (!eventForm.title || !eventForm.date) return;
+    if (!eventForm.allDay && (!eventForm.startTime || !eventForm.endTime)) return;
 
-    const calendarEventData: CalendarEventData = {
-      title:         eventForm.title,
-      startDateTime: `${eventForm.date}T${eventForm.startTime}:00`,
-      endDateTime:   `${eventForm.date}T${eventForm.endTime}:00`,
-      location:      eventForm.location || undefined,
-      timeZone:      "Asia/Seoul"
-    };
+    // 종일 일정이면 날짜만, 아니면 ISO datetime 문자열
+    const calendarEventData: CalendarEventData = eventForm.allDay
+      ? {
+          title:         eventForm.title,
+          startDateTime: eventForm.date,
+          endDateTime:   eventForm.date,
+          allDay:        true,
+          location:      eventForm.location || undefined,
+          timeZone:      "Asia/Seoul"
+        }
+      : {
+          title:         eventForm.title,
+          startDateTime: `${eventForm.date}T${eventForm.startTime}:00`,
+          endDateTime:   `${eventForm.date}T${eventForm.endTime}:00`,
+          location:      eventForm.location || undefined,
+          timeZone:      "Asia/Seoul"
+        };
+
+    const timeDesc = eventForm.allDay
+      ? "시간 미정"
+      : `${eventForm.startTime} ~ ${eventForm.endTime}`;
 
     const approval: Approval = {
       id:          crypto.randomUUID(),
       type:        "calendar_change",
       title:       `📅 ${eventForm.title}`,
-      description: `${eventForm.date} ${eventForm.startTime} ~ ${eventForm.endTime}${eventForm.location ? ` · ${eventForm.location}` : ""}`,
+      description: `${eventForm.date} ${timeDesc}${eventForm.location ? ` · ${eventForm.location}` : ""}`,
       risk:        "low",
       createdAt:   "방금 전",
       status:      "pending",
@@ -406,7 +421,7 @@ export default function App() {
 
     setApprovals(current => [approval, ...current]);
     setShowEventForm(false);
-    setEventForm({ title: "", date: todayStr, startTime: "", endTime: "", location: "" });
+    setEventForm({ title: "", date: todayStr, startTime: "", endTime: "", location: "", allDay: false });
     showToast("일정 추가 요청을 승인 대기함에 추가했습니다.", "success");
     addLog({ action: "calendar.draft", detail: `"${eventForm.title}" 일정 추가 요청 생성.`, status: "pending" });
     setTimeout(() => approvalRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 300);
@@ -716,13 +731,24 @@ export default function App() {
                   value={eventForm.date}
                   onChange={e => setEventForm(f => ({ ...f, date: e.target.value }))}
                 />
-                <div className="event-form-times">
-                  <input type="time" required value={eventForm.startTime}
-                    onChange={e => setEventForm(f => ({ ...f, startTime: e.target.value }))} />
-                  <span>~</span>
-                  <input type="time" required value={eventForm.endTime}
-                    onChange={e => setEventForm(f => ({ ...f, endTime: e.target.value }))} />
-                </div>
+                <label className="event-form-allday">
+                  <input
+                    type="checkbox"
+                    checked={eventForm.allDay}
+                    onChange={e => setEventForm(f => ({ ...f, allDay: e.target.checked, startTime: "", endTime: "" }))}
+                    style={{ accentColor: "var(--brand)", width: 14, height: 14, cursor: "pointer" }}
+                  />
+                  <span>시간 미정 (종일 일정)</span>
+                </label>
+                {!eventForm.allDay && (
+                  <div className="event-form-times">
+                    <input type="time" required value={eventForm.startTime}
+                      onChange={e => setEventForm(f => ({ ...f, startTime: e.target.value }))} />
+                    <span>~</span>
+                    <input type="time" required value={eventForm.endTime}
+                      onChange={e => setEventForm(f => ({ ...f, endTime: e.target.value }))} />
+                  </div>
+                )}
                 <input
                   type="text" placeholder="장소 (선택)"
                   value={eventForm.location}
@@ -744,7 +770,9 @@ export default function App() {
                       <strong>{event.title}</strong>
                       {event.location && <span>{event.location}</span>}
                     </div>
-                    <time style={{ flexShrink: 0 }}>{event.time}</time>
+                    <time style={{ flexShrink: 0 }}>
+                      {event.time || <span className="badge-allday">시간 미정</span>}
+                    </time>
                     <button
                       className="mail-trash-btn"
                       style={{ flexShrink: 0 }}

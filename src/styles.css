@@ -1145,6 +1145,31 @@ textarea {
 .event-form-times span { font-size: 13px; color: var(--ink-5); flex-shrink: 0; }
 .event-form-times input { flex: 1; }
 
+/* 시간 미정 체크박스 레이블 */
+.event-form-allday {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 13px;
+  color: var(--ink-5);
+  cursor: pointer;
+  user-select: none;
+  padding: 2px 0;
+}
+.event-form-allday input[type="checkbox"] { flex-shrink: 0; }
+
+/* 오늘 일정 목록 - 시간 미정 배지 */
+.badge-allday {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--brand);
+  background: rgba(31, 94, 255, .08);
+  border-radius: 20px;
+  padding: 1px 8px;
+  white-space: nowrap;
+}
+
 /* ── 회의록 탭 ───────────────────────────────────────────────────── */
 .meeting-tabs {
   display: flex;

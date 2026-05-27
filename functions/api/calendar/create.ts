@@ -12,8 +12,9 @@ const jsonHeaders = { "content-type": "application/json; charset=utf-8" };
 
 interface CreateEventRequest {
   title: string;
-  startDateTime: string; // ISO 8601
-  endDateTime: string;   // ISO 8601
+  startDateTime: string; // ISO 8601 dateTime 또는 날짜만 (allDay 시 "YYYY-MM-DD")
+  endDateTime: string;   // ISO 8601 dateTime 또는 날짜만 (allDay 시 "YYYY-MM-DD")
+  allDay?: boolean;       // true면 종일 일정 (Google Calendar date 형식)
   description?: string;
   location?: string;
   timeZone?: string;
@@ -48,13 +49,22 @@ export async function onRequestPost({ request }: { request: Request; env: Env })
 
   const timeZone = body.timeZone ?? "Asia/Seoul";
 
-  const event = {
-    summary:     body.title,
-    description: body.description,
-    location:    body.location,
-    start: { dateTime: body.startDateTime, timeZone },
-    end:   { dateTime: body.endDateTime,   timeZone }
-  };
+  // 종일 일정: Google Calendar는 date 필드를 사용하고, endDate는 다음 날로 설정
+  const event = body.allDay
+    ? {
+        summary:     body.title,
+        description: body.description,
+        location:    body.location,
+        start: { date: body.startDateTime },
+        end:   { date: body.endDateTime }
+      }
+    : {
+        summary:     body.title,
+        description: body.description,
+        location:    body.location,
+        start: { dateTime: body.startDateTime, timeZone },
+        end:   { dateTime: body.endDateTime,   timeZone }
+      };
 
   const res = await fetch(
     "https://www.googleapis.com/calendar/v3/calendars/primary/events",
