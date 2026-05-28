@@ -1252,7 +1252,7 @@ button.mail-trash-btn {
   display: flex;
   align-items: center;
   align-self: flex-start;
-  gap: 4px;
+  gap: 3px;
   flex-shrink: 0;
   margin-left: auto;
   padding-top: 1px;
@@ -1265,26 +1265,33 @@ button.mail-trash-btn {
 .task-actions .mail-trash-btn {
   width: 24px;
   height: 24px;
-  border: 1px solid var(--ink-2);
-  background: var(--white) !important;
-  color: var(--ink-7);
+  border: 1px solid transparent;
+  background: transparent !important;
+  color: var(--ink-5);
   opacity: 1;
-  box-shadow: var(--sh-xs) !important;
+  box-shadow: none !important;
 }
-.task-actions .mail-trash-btn:nth-child(1) { color: var(--brand); }
+.task-actions .mail-trash-btn:nth-child(1) {
+  color: #f97316;
+  opacity: .82;
+}
 .task-actions .mail-trash-btn:nth-child(2) {
   color: var(--ink-4);
-  opacity: .58;
+  opacity: .45;
   filter: grayscale(1) saturate(.35);
 }
-.task-actions .mail-trash-btn:nth-child(3) { color: var(--danger); }
+.task-actions .mail-trash-btn:nth-child(3) {
+  color: var(--ink-5);
+  opacity: .72;
+}
 .task-actions .mail-trash-btn:hover {
   border-color: currentColor;
+  opacity: 1;
   box-shadow: var(--sh-sm) !important;
 }
 .task-actions .mail-trash-btn:nth-child(1):hover {
-  color: var(--brand) !important;
-  background: var(--brand-light) !important;
+  color: #ea580c !important;
+  background: #fff7ed !important;
 }
 .task-actions .mail-trash-btn:nth-child(2):hover {
   color: var(--warning) !important;
@@ -1963,21 +1970,21 @@ button.mail-trash-btn:hover {
 
 /* ── 할 일 상단 고정 ─────────────────────────────────────────────── */
 .task-card.pinned {
-  border-left: 3px solid #f59e0b;
-  background: #fffbf0;
+  border-left: 4px solid #f97316;
+  background: #fff8ed;
 }
-.task-card.pinned:hover { background: #fff7e0; }
+.task-card.pinned:hover { background: #fff3df; }
 .task-actions .mail-trash-btn.pin-active {
   opacity: 1 !important;
   color: #7c2d12 !important;
   background: #ffedd5 !important;
-  border: 2px solid #ea580c !important;
-  box-shadow: 0 0 0 2px rgba(234, 88, 12, .24), var(--sh-sm) !important;
+  border: 1.5px solid #ea580c !important;
+  box-shadow: 0 0 0 2px rgba(234, 88, 12, .16), var(--sh-xs) !important;
   filter: none !important;
 }
 .task-actions .mail-trash-btn.pin-active:hover {
   color: #7c2d12 !important;
   background: #fed7aa !important;
   border-color: #c2410c !important;
-  box-shadow: 0 0 0 3px rgba(234, 88, 12, .30), var(--sh-sm) !important;
+  box-shadow: 0 0 0 2px rgba(234, 88, 12, .28), var(--sh-sm) !important;
 }
