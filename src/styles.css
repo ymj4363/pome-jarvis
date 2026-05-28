@@ -1967,15 +1967,15 @@ button.mail-trash-btn:hover {
   background: #fffbf0;
 }
 .task-card.pinned:hover { background: #fff7e0; }
-.mail-trash-btn.pin-active {
+.task-actions .mail-trash-btn.pin-active {
   opacity: 1 !important;
   color: #7c2d12 !important;
   background: #ffedd5 !important;
   border: 2px solid #ea580c !important;
   box-shadow: 0 0 0 2px rgba(234, 88, 12, .24), var(--sh-sm) !important;
-  filter: none;
+  filter: none !important;
 }
-.mail-trash-btn.pin-active:hover {
+.task-actions .mail-trash-btn.pin-active:hover {
   color: #7c2d12 !important;
   background: #fed7aa !important;
   border-color: #c2410c !important;
