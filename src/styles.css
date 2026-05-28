@@ -943,6 +943,58 @@ textarea {
   100% { background-position: -100% 0; }
 }
 
+/* anchor 이동 시 sticky topbar에 가리지 않도록 오프셋 */
+#briefing, #meeting, #mail, #approval, #log {
+  scroll-margin-top: 62px;
+}
+
+/* ── Topbar ─────────────────────────────────────────────────────── */
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  margin: calc(-1 * var(--pad)) calc(-1 * var(--pad)) 0;
+  padding: 0 var(--pad);
+  height: 54px;
+  background: rgba(249, 250, 251, 0.96);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--ink-2);
+}
+
+.topbar-brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-right: auto;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--ink);
+  letter-spacing: -.01em;
+}
+
+.topbar-user {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 12px 4px 6px;
+  border-radius: var(--r-f);
+  background: var(--white);
+  border: 1px solid var(--ink-2);
+  box-shadow: var(--sh-xs);
+}
+
+.topbar-user strong {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink-7);
+  white-space: nowrap;
+}
+
 /* ── Responsive ─────────────────────────────────────────────────── */
 @media (max-width: 1100px) {
   .grid.three { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -955,8 +1007,6 @@ textarea {
   .brand { border-bottom: none; padding-bottom: 0; margin-bottom: 0; }
   .nav-label { display: none; }
   .nav-list { grid-template-columns: repeat(3, minmax(0, 1fr)); flex: 1 1 100%; margin-top: 8px; }
-  .sidebar-footer { flex: 1 1 100%; padding: 8px 0 0; border-top: 1px solid var(--ink-1); display: flex; gap: 12px; align-items: center; }
-  .sidebar-note { margin: 0; display: none; }
   .grid.three, .grid.two, .mail-list { grid-template-columns: 1fr; }
   .hero { grid-template-columns: 1fr; gap: 20px; }
   .hero-metrics { flex-direction: row; }

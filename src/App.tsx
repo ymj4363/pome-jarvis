@@ -697,39 +697,48 @@ export default function App() {
           ))}
         </nav>
 
-        <div className="sidebar-footer">
-          {auth ? (
-            <>
-              <div className="user-info">
-                <img src={auth.user.picture} alt={auth.user.name} className="user-avatar" referrerPolicy="no-referrer" />
-                <div className="user-info-text">
-                  <strong>{auth.user.name}</strong>
-                  <span>{auth.user.email}</span>
-                </div>
-              </div>
-              <button className="icon-button" onClick={handleRefreshData} disabled={dataLoading}>
-                {dataLoading ? <span className="spinner" /> : "🔄"} 새로고침
-              </button>
-              <button className="reset-button" onClick={handleLogout}>로그아웃</button>
-            </>
-          ) : (
-            <>
-              <p className="sidebar-note">
-                {hasClientId() ? "구글 계정을 연동하면 실제 메일·일정을 가져옵니다." : "데모 모드 — 더미 데이터로 동작합니다."}
-              </p>
-              {hasClientId() && (
-                <button className="google-login-btn" onClick={handleLogin}>
-                  <GoogleIcon /> 구글 계정 연동
-                </button>
-              )}
-              <button className="reset-button" onClick={resetAllData}>🔄 초기화</button>
-            </>
-          )}
-        </div>
       </aside>
 
       {/* ── Content ────────────────────────────────────────────── */}
       <main className="content">
+
+        {/* ── Topbar ───────────────────────────────────────────── */}
+        <div className="topbar">
+          <span className="topbar-brand">
+            <div className="brand-mark" style={{ width: 26, height: 26, fontSize: 13 }}>P</div>
+            Pome Jarvis
+            {!auth && <span style={{ fontSize: 11, fontWeight: 500, color: "var(--ink-5)", marginLeft: 4 }}>데모 모드</span>}
+          </span>
+          {auth ? (
+            <>
+              <button className="ghost" style={{ minHeight: 34, padding: "0 12px", fontSize: 13 }} onClick={handleRefreshData} disabled={dataLoading}>
+                {dataLoading ? <span className="spinner" /> : "🔄"} 새로고침
+              </button>
+              <div className="topbar-user">
+                <img src={auth.user.picture} alt={auth.user.name} className="user-avatar" referrerPolicy="no-referrer" />
+                <strong>{auth.user.name}</strong>
+              </div>
+              <button className="ghost" style={{ minHeight: 34, padding: "0 12px", fontSize: 13 }} onClick={handleLogout}>
+                로그아웃
+              </button>
+            </>
+          ) : (
+            <>
+              {hasClientId() && (
+                <button
+                  style={{ background: "var(--white)", color: "var(--ink-7)", boxShadow: "inset 0 0 0 1px var(--ink-3)", fontSize: 13, fontWeight: 600, minHeight: 34, padding: "0 14px" }}
+                  onClick={handleLogin}
+                >
+                  <GoogleIcon /> 구글 계정 연동
+                </button>
+              )}
+              <button className="ghost" style={{ minHeight: 34, padding: "0 12px", fontSize: 13 }} onClick={resetAllData}>
+                🔄 초기화
+              </button>
+            </>
+          )}
+        </div>
+
         {dataLoading && <div className="data-loading-bar" />}
 
         {/* Hero */}
