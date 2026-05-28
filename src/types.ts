@@ -77,3 +77,18 @@ export type LogEntry = {
   status: "success" | "failed" | "pending" | "rejected";
   createdAt: string;
 };
+
+export type AgentStatus = "pending" | "running" | "done" | "error" | "killed";
+
+export type AgentTask = {
+  id: string;
+  prompt: string;
+  workdir: string;
+  skipPermissions: boolean;
+  status: AgentStatus;
+  output: string;
+  createdAt: string;
+  startedAt?: string;
+  completedAt?: string;
+  exitCode?: number;
+};

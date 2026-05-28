@@ -1601,6 +1601,208 @@ textarea {
   .task-add-date { width: 100%; }
 }
 
+/* ── 에이전트 섹션 ───────────────────────────────────────────────── */
+.section-agent {
+  border-top: 3px solid #7c3aed;
+  background: linear-gradient(180deg, #f5f3ff 0px, var(--white) 72px);
+}
+.section-agent .eyebrow { color: #7c3aed; font-weight: 600; }
+
+/* 사이드바 스텝 */
+.agent-steps { display: flex; flex-direction: column; gap: 4px; }
+.agent-step {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 7px 10px;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--ink-2);
+  background: var(--ink-0);
+  transition: background var(--t);
+}
+.agent-step.done {
+  background: var(--success-bg);
+  border-color: var(--success-border);
+}
+.agent-step-num {
+  width: 20px; height: 20px;
+  border-radius: 50%;
+  background: var(--brand);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.agent-step.done .agent-step-num { background: var(--success); }
+.agent-step-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--ink-7);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.agent-step.done .agent-step-label { color: var(--success); font-weight: 600; }
+.agent-step-code {
+  margin-top: 6px; margin-bottom: 0;
+  padding: 6px 10px;
+  background: #0f1117; color: #a8b4c8;
+  border-radius: 5px; font-size: 11px;
+  font-family: 'Cascadia Code', Consolas, monospace;
+  white-space: pre-wrap; line-height: 1.6;
+}
+
+/* 사이드바 상황별 동작 테이블 */
+.agent-situation { display: flex; flex-direction: column; gap: 3px; }
+.agent-situation-row {
+  display: flex; align-items: center;
+  justify-content: space-between;
+  padding: 5px 10px;
+  border-radius: var(--r-sm);
+  background: var(--ink-0);
+  border: 1px solid var(--ink-2);
+  font-size: 12px;
+}
+.agent-situation-label { color: var(--ink-6); }
+.agent-situation-badge {
+  font-size: 11px; font-weight: 600;
+  padding: 1px 8px; border-radius: var(--r-f);
+  white-space: nowrap;
+}
+.agent-situation-badge.ok  { background: var(--success-bg); color: var(--success); border: 1px solid var(--success-border); }
+.agent-situation-badge.bad { background: var(--ink-1); color: var(--ink-5); border: 1px solid var(--ink-3); }
+
+/* 폼 */
+.agent-form {
+  background: var(--ink-0);
+  border: 1px solid var(--ink-2);
+  border-radius: var(--r-lg);
+  overflow: hidden;
+  margin-bottom: 20px;
+}
+.agent-form-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 18px;
+  background: var(--white);
+  border-bottom: 1px solid var(--ink-2);
+}
+.agent-form-header-title { font-size: 14px; font-weight: 700; color: var(--ink); }
+.agent-form-header-count { font-size: 12px; font-weight: 600; color: var(--ink-5); }
+.agent-form-header-count.full { color: var(--danger); }
+.agent-form-body { padding: 18px; display: flex; flex-direction: column; gap: 14px; }
+
+.agent-form-field { display: flex; flex-direction: column; gap: 6px; }
+.agent-form-label {
+  font-size: 11px; font-weight: 700;
+  color: var(--ink-5);
+  letter-spacing: .05em; text-transform: uppercase;
+}
+.agent-folder-row { display: flex; gap: 8px; align-items: stretch; }
+.agent-folder-display {
+  flex: 1; display: flex; align-items: center; gap: 8px;
+  padding: 8px 12px;
+  background: var(--white);
+  border: 1px solid var(--ink-3);
+  border-radius: var(--r-sm);
+  font-size: 13px; font-family: 'Cascadia Code', Consolas, monospace;
+  color: var(--ink-7); min-width: 0; overflow: hidden;
+}
+.agent-folder-display span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.agent-folder-placeholder { color: var(--ink-4); font-family: inherit; font-size: 13px; }
+.agent-form-footer {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding-top: 4px;
+}
+.agent-perm-label {
+  display: flex; align-items: center; gap: 7px;
+  font-size: 13px; color: var(--ink-6); cursor: pointer;
+}
+
+/* 에이전트 카드 */
+.agent-list { display: flex; flex-direction: column; gap: 10px; }
+.agent-card {
+  border-radius: var(--r);
+  border: 1px solid var(--ink-2);
+  overflow: hidden;
+  transition: box-shadow var(--t);
+}
+.agent-card:hover { box-shadow: var(--sh-sm); }
+.agent-card.running { border-left: 4px solid var(--brand); }
+.agent-card.done    { border-left: 4px solid var(--success); }
+.agent-card.error   { border-left: 4px solid var(--danger); }
+.agent-card.killed  { border-left: 4px solid var(--ink-3); }
+
+.agent-card-header {
+  display: flex; align-items: center; gap: 12px;
+  padding: 14px 16px;
+  background: var(--white);
+  cursor: pointer;
+  user-select: none;
+}
+.agent-card-icon { font-size: 20px; flex-shrink: 0; line-height: 1; }
+.agent-card-body { flex: 1; min-width: 0; }
+.agent-card-prompt {
+  font-size: 14px; font-weight: 700; color: var(--ink);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  margin-bottom: 5px;
+}
+.agent-card-meta { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.agent-card-path {
+  font-size: 11px; color: var(--ink-4);
+  font-family: 'Cascadia Code', Consolas, monospace;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  max-width: 320px;
+}
+.agent-status-badge {
+  font-size: 11px; font-weight: 700;
+  padding: 2px 8px; border-radius: var(--r-f);
+  white-space: nowrap;
+}
+.agent-status-badge.running { background: #eff6ff; color: var(--brand); border: 1px solid var(--brand-muted); }
+.agent-status-badge.done    { background: var(--success-bg); color: var(--success); border: 1px solid var(--success-border); }
+.agent-status-badge.error   { background: var(--danger-bg); color: var(--danger); border: 1px solid var(--danger-border); }
+.agent-status-badge.killed  { background: var(--ink-1); color: var(--ink-5); border: 1px solid var(--ink-3); }
+
+.agent-card-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+.agent-card-chevron { font-size: 11px; color: var(--ink-4); }
+
+.agent-kill-btn {
+  min-height: 30px; padding: 0 12px; font-size: 12px; font-weight: 600;
+  background: var(--danger-bg); color: var(--danger);
+  box-shadow: inset 0 0 0 1px var(--danger-border);
+}
+.agent-kill-btn:hover:not(:disabled) {
+  background: #ffddd9;
+  box-shadow: inset 0 0 0 1px var(--danger);
+}
+
+.agent-output {
+  margin: 0; padding: 16px 18px;
+  background: #0f1117; color: #c9d1d9;
+  font-size: 12px; line-height: 1.75;
+  max-height: 420px; overflow-y: auto;
+  font-family: 'Cascadia Code', 'Consolas', monospace;
+  white-space: pre-wrap; word-break: break-all;
+  border-top: 1px solid #1e2536;
+}
+
+/* 서버 상태 배지 */
+.agent-server-badge {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: 12px; font-weight: 600;
+  padding: 3px 12px; border-radius: var(--r-f);
+}
+.agent-server-badge.online  { background: var(--success-bg); color: var(--success); border: 1px solid var(--success-border); }
+.agent-server-badge.offline { background: var(--ink-1); color: var(--ink-5); border: 1px solid var(--ink-3); }
+
+/* 섹션 라벨 */
+.agent-section-label {
+  font-size: 10px; font-weight: 700;
+  letter-spacing: .06em; text-transform: uppercase;
+  color: var(--ink-4); margin-bottom: 8px; padding-left: 2px;
+}
+
 /* ── 할 일 인라인 편집 인풋 ─────────────────────────────────────── */
 .task-edit-input {
   display: block;
