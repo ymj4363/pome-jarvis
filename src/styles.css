@@ -1281,8 +1281,8 @@ button.mail-trash-btn {
   filter: grayscale(1) saturate(.35);
 }
 .task-actions .mail-trash-btn:nth-child(3) {
-  color: var(--ink-5);
-  opacity: .72;
+  color: var(--ink-6);
+  opacity: .86;
 }
 .task-actions .mail-trash-btn:hover {
   border-color: currentColor;
