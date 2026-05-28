@@ -111,6 +111,8 @@ export default function App() {
   const [voiceSupported, setVoiceSupported]       = useState(true);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const recognitionRef = useRef<any>(null);
+  const manualStopRef = useRef(false);
+  const restartTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // 열린 할 일 전체 보기
   const [showAllOpenTasks, setShowAllOpenTasks] = useState(false);
@@ -460,10 +462,18 @@ export default function App() {
   };
 
   /* ── 음성 인식 ──────────────────────────────────────────────── */
-  const startVoiceRecognition = () => {
+  const startVoiceRecognitionInternal = (isRestart: boolean = false) => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const SpeechRecognitionAPI = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SpeechRecognitionAPI) { setVoiceSupported(false); showToast("이 브라우저는 음성 인식을 지원하지 않습니다. Chrome을 사용해 주세요.", "error"); return; }
+
+    // 이전 인스턴스 핸들러 제거 후 정리
+    if (recognitionRef.current) {
+      recognitionRef.current.onend = null;
+      recognitionRef.current.onerror = null;
+      recognitionRef.current.onresult = null;
+      try { recognitionRef.current.stop(); } catch {}
+    }
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const recognition = new SpeechRecognitionAPI() as any;
@@ -483,17 +493,50 @@ export default function App() {
       if (finalText) setVoiceTranscript(prev => prev + (prev ? " " : "") + finalText);
       setVoiceInterim(interimText);
     };
-    recognition.onerror = () => { setVoiceRecording(false); setVoiceInterim(""); };
-    recognition.onend   = () => { setVoiceRecording(false); setVoiceInterim(""); recognitionRef.current = null; };
+
+    recognition.onerror = (e: any) => {
+      if (e.error === "not-allowed") {
+        showToast("마이크 권한이 거부되었습니다. 브라우저 설정에서 허용해주세요.", "error");
+        manualStopRef.current = true;
+      }
+      // 네트워크/묵음 오류는 onend에서 자동 재시작
+    };
+
+    recognition.onend = () => {
+      recognitionRef.current = null;
+      if (manualStopRef.current) {
+        setVoiceRecording(false);
+        setVoiceInterim("");
+        return;
+      }
+      // 묵음/네트워크 종료 시 즉시 재시작 (recording 상태 유지)
+      if (restartTimerRef.current) clearTimeout(restartTimerRef.current);
+      restartTimerRef.current = setTimeout(() => {
+        if (!manualStopRef.current) startVoiceRecognitionInternal(true);
+      }, 0);
+    };
 
     recognition.start();
     recognitionRef.current = recognition;
-    setVoiceRecording(true);
+    if (!isRestart) setVoiceRecording(true);
+  };
+
+  const startVoiceRecognition = () => {
+    manualStopRef.current = false;
+    if (restartTimerRef.current) { clearTimeout(restartTimerRef.current); restartTimerRef.current = null; }
+    startVoiceRecognitionInternal(false);
   };
 
   const stopVoiceRecognition = () => {
-    recognitionRef.current?.stop();
-    recognitionRef.current = null;
+    manualStopRef.current = true;
+    if (restartTimerRef.current) { clearTimeout(restartTimerRef.current); restartTimerRef.current = null; }
+    if (recognitionRef.current) {
+      recognitionRef.current.onend = null;
+      recognitionRef.current.onerror = null;
+      recognitionRef.current.onresult = null;
+      try { recognitionRef.current.stop(); } catch {}
+      recognitionRef.current = null;
+    }
     setVoiceRecording(false);
     setVoiceInterim("");
   };
