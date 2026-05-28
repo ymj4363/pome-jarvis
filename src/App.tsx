@@ -828,21 +828,28 @@ export default function App() {
 
         <p className="nav-label">메뉴</p>
         <nav className="nav-list" aria-label="주요 화면">
-          {NAV_ITEMS.map(item => (
-            <a
-              key={item.id}
-              href={IS_LOCAL ? `#${item.id}` : undefined}
-              className={activeSection === item.id ? "active" : ""}
-              onClick={!IS_LOCAL ? (e) => { e.preventDefault(); setActiveSection(item.id); } : undefined}
-              style={{ cursor: "pointer" }}
-            >
-              <span className="nav-icon">{item.icon}</span>
-              {item.label}
-              {item.id === "approval" && pendingApprovals.length > 0 && (
-                <span className="nav-badge">{pendingApprovals.length}</span>
-              )}
-            </a>
-          ))}
+          {NAV_ITEMS.map(item => {
+            const badge =
+              item.id === "approval" && pendingApprovals.length > 0 ? { count: pendingApprovals.length, color: "danger" } :
+              item.id === "mail"     && auth && mails.length > 0     ? { count: mails.length,            color: "brand" }  :
+              item.id === "meeting"  && openTasks.length > 0         ? { count: openTasks.length,         color: "warning" } :
+              null;
+            return (
+              <a
+                key={item.id}
+                href={IS_LOCAL ? `#${item.id}` : undefined}
+                className={activeSection === item.id ? "active" : ""}
+                onClick={!IS_LOCAL ? (e) => { e.preventDefault(); setActiveSection(item.id); } : undefined}
+                style={{ cursor: "pointer" }}
+              >
+                <span className="nav-icon">{item.icon}</span>
+                <span className="nav-label-text">{item.id === "meeting" ? "회의록·할일" : item.label}</span>
+                {badge && (
+                  <span className={`nav-badge nav-badge-${badge.color}`}>{badge.count}</span>
+                )}
+              </a>
+            );
+          })}
         </nav>
 
         {/* 로컬 전용: 사용 순서 + 상황별 동작 */}
@@ -1277,7 +1284,7 @@ export default function App() {
                         <span>{task.owner} · {task.due} · {task.source}</span>
                       </div>
                     </label>
-                    <div style={{ display: "flex", alignItems: "center", gap: 2, flexShrink: 0 }}>
+                    <div className="task-actions">
                       <button
                         className="mail-trash-btn"
                         style={{ alignSelf: "center" }}
@@ -1723,15 +1730,26 @@ export default function App() {
 
       {/* ── Mobile Bottom Nav ───────────────────────────────────── */}
       <nav className="mobile-nav" aria-label="모바일 탐색">
-        {NAV_ITEMS.map(item => (
-          <a key={item.id} href={`#${item.id}`} className={activeSection === item.id ? "active" : ""}>
-            <span className="mobile-nav-icon">{item.icon}</span>
-            <span className="mobile-nav-label">{item.label}</span>
-            {item.id === "approval" && pendingApprovals.length > 0 && (
-              <span className="mobile-nav-badge">{pendingApprovals.length}</span>
-            )}
-          </a>
-        ))}
+        {NAV_ITEMS.map(item => {
+          const badge =
+            item.id === "approval" && pendingApprovals.length > 0 ? { count: pendingApprovals.length, color: "danger" } :
+            item.id === "mail"     && auth && mails.length > 0     ? { count: mails.length,            color: "brand" }  :
+            item.id === "meeting"  && openTasks.length > 0         ? { count: openTasks.length,         color: "warning" } :
+            null;
+          return (
+            <a
+              key={item.id}
+              href={IS_LOCAL ? `#${item.id}` : undefined}
+              className={activeSection === item.id ? "active" : ""}
+              onClick={!IS_LOCAL ? (e) => { e.preventDefault(); setActiveSection(item.id); } : undefined}
+              style={{ cursor: "pointer" }}
+            >
+              <span className="mobile-nav-icon">{item.icon}</span>
+              <span className="mobile-nav-label">{item.id === "meeting" ? "회의록·할일" : item.label}</span>
+              {badge && <span className={`mobile-nav-badge mobile-nav-badge-${badge.color}`}>{badge.count}</span>}
+            </a>
+          );
+        })}
       </nav>
 
       {/* ── Toast ──────────────────────────────────────────────── */}
