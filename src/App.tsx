@@ -133,6 +133,10 @@ export default function App() {
   // 열린 할 일 전체 보기
   const [showAllOpenTasks, setShowAllOpenTasks] = useState(false);
 
+  // 캘린더 조회 범위 (일수)
+  const [calendarDays, setCalendarDays] = useState<1 | 3 | 7>(1);
+  const [calendarLoading, setCalendarLoading] = useState(false);
+
   // 승인 대기함 접기/펼치기 + 처리 완료 토글
   const [collapsedApprovals, setCollapsedApprovals] = useState<Record<string, boolean>>({});
   const [showProcessed, setShowProcessed] = useState(false);
@@ -527,6 +531,21 @@ export default function App() {
     setEditingTaskTitle("");
     setEditingTaskDue("");
     setEditingTaskOwner("");
+  };
+
+  /* ── 캘린더 범위 변경 재조회 ────────────────────────────────── */
+  const refetchCalendar = async (days: 1 | 3 | 7) => {
+    setCalendarDays(days);
+    if (!auth) return;
+    setCalendarLoading(true);
+    try {
+      const result = await fetchCalendarEvents(auth.accessToken, days);
+      setEvents(result);
+    } catch {
+      showToast("캘린더 일정을 불러오지 못했습니다.", "error");
+    } finally {
+      setCalendarLoading(false);
+    }
   };
 
   /* ── 할 일 상단 고정 ─────────────────────────────────────────── */
@@ -994,17 +1013,41 @@ export default function App() {
 
         {activeSection === "briefing" && <section className="grid two">
 
-          {/* 오늘 일정 + 추가 폼 */}
+          {/* 일정 + 추가 폼 */}
           <article className="panel panel-calendar">
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
-              <h2>오늘 일정</h2>
-              <button
-                className="ghost"
-                style={{ minHeight: 28, padding: "0 10px", fontSize: 12, fontWeight: 600 }}
-                onClick={() => setShowEventForm(f => !f)}
-              >
-                {showEventForm ? "취소" : "+ 일정 추가"}
-              </button>
+            {/* 헤더: 제목 + 범위 탭 + 구글 캘린더 링크 + 추가 버튼 */}
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8, gap: 8, flexWrap: "wrap" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                <h2 style={{ margin: 0 }}>일정</h2>
+                <div style={{ display: "flex", gap: 2 }}>
+                  {([1, 3, 7] as const).map(d => (
+                    <button
+                      key={d}
+                      className="ghost"
+                      style={{ minHeight: 24, padding: "0 8px", fontSize: 11, fontWeight: calendarDays === d ? 700 : 400, borderBottom: calendarDays === d ? "2px solid var(--brand)" : "2px solid transparent", borderRadius: 0 }}
+                      onClick={() => refetchCalendar(d)}
+                      disabled={calendarLoading}
+                    >
+                      {d === 1 ? "오늘" : `${d}일`}
+                    </button>
+                  ))}
+                </div>
+                {calendarLoading && <span style={{ fontSize: 11, color: "var(--ink-4)" }}>로딩 중…</span>}
+              </div>
+              <div style={{ display: "flex", gap: 4 }}>
+                <a href="https://calendar.google.com" target="_blank" rel="noopener noreferrer" style={{ textDecoration: "none" }}>
+                  <button type="button" className="ghost" style={{ minHeight: 28, padding: "0 10px", fontSize: 12 }}>
+                    📅 구글 캘린더
+                  </button>
+                </a>
+                <button
+                  className="ghost"
+                  style={{ minHeight: 28, padding: "0 10px", fontSize: 12, fontWeight: 600 }}
+                  onClick={() => setShowEventForm(f => !f)}
+                >
+                  {showEventForm ? "취소" : "+ 추가"}
+                </button>
+              </div>
             </div>
 
             {showEventForm && (
@@ -1049,29 +1092,56 @@ export default function App() {
             )}
 
             {events.length === 0 && !showEventForm ? (
-              <div className="empty-state"><div className="empty-icon">📅</div><p>오늘 일정이 없습니다.</p></div>
+              <div className="empty-state"><div className="empty-icon">📅</div><p>{calendarDays === 1 ? "오늘" : `${calendarDays}일 내`} 일정이 없습니다.</p></div>
             ) : (
               <div className="stack">
-                {events.map(event => (
-                  <div className="row-item" key={event.id}>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <strong>{event.title}</strong>
-                      {event.location && <span>{event.location}</span>}
+                {(() => {
+                  // 날짜별 그룹핑 (다일일 뷰)
+                  const dateLabels: Record<string, string> = {};
+                  const today = new Date(todayStr);
+                  for (let i = 0; i < calendarDays; i++) {
+                    const d = new Date(today);
+                    d.setDate(today.getDate() + i);
+                    const key = d.toISOString().slice(0, 10);
+                    dateLabels[key] = i === 0 ? "오늘" : i === 1 ? "내일" : i === 2 ? "모레" :
+                      d.toLocaleDateString("ko-KR", { month: "numeric", day: "numeric", weekday: "short" });
+                  }
+                  const grouped = events.reduce<Record<string, typeof events>>((acc, e) => {
+                    const k = e.date ?? todayStr;
+                    (acc[k] ??= []).push(e);
+                    return acc;
+                  }, {});
+                  const sortedDates = Object.keys(grouped).sort();
+                  return sortedDates.map(dateKey => (
+                    <div key={dateKey}>
+                      {calendarDays > 1 && (
+                        <div style={{ fontSize: 11, fontWeight: 700, color: "var(--ink-5)", padding: "6px 0 2px", borderBottom: "1px solid var(--ink-1)", marginBottom: 4 }}>
+                          {dateLabels[dateKey] ?? dateKey}
+                        </div>
+                      )}
+                      {grouped[dateKey].map(event => (
+                        <div className="row-item" key={event.id}>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <strong>{event.title}</strong>
+                            {event.location && <span>{event.location}</span>}
+                          </div>
+                          <time style={{ flexShrink: 0 }}>
+                            {event.time || <span className="badge-allday">시간 미정</span>}
+                          </time>
+                          <button
+                            className="mail-trash-btn"
+                            style={{ flexShrink: 0 }}
+                            onClick={() => handleDeleteEvent(event)}
+                            title="일정 취소"
+                            aria-label="일정 취소"
+                          >
+                            🗑️
+                          </button>
+                        </div>
+                      ))}
                     </div>
-                    <time style={{ flexShrink: 0 }}>
-                      {event.time || <span className="badge-allday">시간 미정</span>}
-                    </time>
-                    <button
-                      className="mail-trash-btn"
-                      style={{ flexShrink: 0 }}
-                      onClick={() => handleDeleteEvent(event)}
-                      title="일정 취소"
-                      aria-label="일정 취소"
-                    >
-                      🗑️
-                    </button>
-                  </div>
-                ))}
+                  ));
+                })()}
               </div>
             )}
           </article>

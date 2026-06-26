@@ -52,10 +52,12 @@ export async function onRequestGet({ request }: { request: Request; env: Env }) 
   }
   const accessToken = auth.slice(7);
 
-  // 오늘 날짜 범위 (KST 기준 자정 ~ 23:59:59)
+  const url   = new URL(request.url);
+  const days  = Math.min(Math.max(parseInt(url.searchParams.get("days") ?? "1", 10) || 1, 1), 30);
+
   const now      = new Date();
   const timeMin  = new Date(now.getFullYear(), now.getMonth(), now.getDate(),  0,  0,  0).toISOString();
-  const timeMax  = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59).toISOString();
+  const timeMax  = new Date(now.getFullYear(), now.getMonth(), now.getDate() + days - 1, 23, 59, 59).toISOString();
 
   const params = new URLSearchParams({
     timeMin,
@@ -86,7 +88,8 @@ export async function onRequestGet({ request }: { request: Request; env: Env }) 
       id:       e.id,
       title:    e.summary ?? "(제목 없음)",
       time:     formatTime(e),
-      location: e.location ?? ""
+      location: e.location ?? "",
+      date:     (e.start.dateTime ?? e.start.date ?? "").slice(0, 10)
     }));
 
   return new Response(JSON.stringify({ events }), { headers: jsonHeaders });

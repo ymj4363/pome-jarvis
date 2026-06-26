@@ -15,6 +15,7 @@ export type CalendarEvent = {
   title: string;
   time: string;
   location: string;
+  date?: string; // YYYY-MM-DD, 다일일 뷰에서 날짜 구분용
 };
 
 export type Task = {

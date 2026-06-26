@@ -6,8 +6,8 @@ import type { CalendarEvent, CalendarEventData } from "../types";
 
 /* ── 오늘 일정 조회 ──────────────────────────────────────────────── */
 
-export async function fetchCalendarEvents(accessToken: string): Promise<CalendarEvent[]> {
-  const response = await fetch("/api/calendar/events", {
+export async function fetchCalendarEvents(accessToken: string, days = 1): Promise<CalendarEvent[]> {
+  const response = await fetch(`/api/calendar/events?days=${days}`, {
     headers: { Authorization: `Bearer ${accessToken}` }
   });
 
