@@ -325,26 +325,30 @@ textarea {
   margin-top: -2px;
 }
 
-/* 앱 링크 목록 — orange 왼쪽 들여쓰기 */
+/* 앱 링크 목록 — 카드 스타일 유지, hover만 주황 */
 .nav-list-apps {
-  border-left: 2px solid rgba(234,88,12,.3);
-  margin-left: 6px;
-  padding-left: 4px;
+  border-left: none;
+  margin-left: 0;
+  padding-left: 0;
 }
 .nav-list-apps a:hover {
-  background: rgba(234,88,12,.08);
+  background: rgba(234,88,12,.06);
 }
 
 .nav-list {
   display: grid;
-  gap: 2px;
+  gap: 0;
+  background: var(--white);
+  border-radius: var(--r);
+  box-shadow: var(--sh-sm);
+  overflow: hidden;
 }
 .nav-list a {
   display: flex;
   align-items: center;
   gap: 9px;
-  border-radius: var(--r-sm);
-  padding: 9px 12px 9px 15px;
+  border-radius: 0;
+  padding: 11px 12px 11px 14px;
   font-size: 14px;
   font-weight: 500;
   color: var(--ink-6);
@@ -353,14 +357,18 @@ textarea {
   position: relative;
   letter-spacing: -.01em;
   border-left: 3px solid transparent;
+  border-bottom: 0.5px solid rgba(0,0,0,.07);
+}
+.nav-list a:last-child {
+  border-bottom: none;
 }
 .nav-list a:hover {
-  background: rgba(0,0,0,.04);
+  background: rgba(0,0,0,.03);
   color: var(--ink-8);
 }
 .nav-list a.active {
-  background: rgba(37,99,235,.09);
-  color: var(--brand);
+  background: var(--brand-light);
+  color: var(--brand-dark);
   font-weight: 700;
   border-left-color: var(--brand);
 }
