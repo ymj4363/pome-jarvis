@@ -1306,14 +1306,15 @@ export default function App() {
                       <div style={{ flex: 1, minWidth: 0 }} onClick={e => e.preventDefault()}>
                         {editingTaskId === task.id ? (
                           <div style={{ display: "flex", flexDirection: "column", gap: 4 }} onClick={e => { e.stopPropagation(); e.preventDefault(); }}>
-                            <input
+                            <textarea
                               className="task-edit-input"
                               value={editingTaskTitle}
                               autoFocus
-                              placeholder="제목"
+                              rows={2}
+                              placeholder="제목 (Enter 저장 / Shift+Enter 줄바꿈)"
                               onChange={e => setEditingTaskTitle(e.target.value)}
                               onKeyDown={e => {
-                                if (e.key === "Enter") commitEditTask(task.id);
+                                if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); commitEditTask(task.id); }
                                 if (e.key === "Escape") cancelEditTask();
                               }}
                             />
