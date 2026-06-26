@@ -58,7 +58,7 @@ function formatDate(internalDate: string): string {
   const diffH = Math.floor((now.getTime() - date.getTime()) / 3_600_000);
   const diffD = Math.floor(diffH / 24);
 
-  const hhmm = date.toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" });
+  const hhmm = date.toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit", timeZone: "Asia/Seoul" });
   if (diffH < 1) return "방금 전";
   if (diffH < 24) return `오늘 ${hhmm}`;
   if (diffD === 1) return `어제 ${hhmm}`;
