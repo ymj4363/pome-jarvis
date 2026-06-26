@@ -1302,9 +1302,10 @@ export default function App() {
                               }}
                             />
                             <input
+                              type="date"
                               className="task-edit-input"
                               value={editingTaskDue}
-                              placeholder="마감일 (예: 2026-07-01 또는 미정)"
+                              min={todayStr}
                               onChange={e => setEditingTaskDue(e.target.value)}
                               onKeyDown={e => {
                                 if (e.key === "Enter") commitEditTask(task.id);
