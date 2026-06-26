@@ -895,7 +895,7 @@ export default function App() {
           aria-expanded={showSidebarApps}
         >
           <span className="nav-apps-toggle-label">앱</span>
-          <span className="nav-apps-toggle-chevron">{showSidebarApps ? "▾" : "▸"}</span>
+          <span className="nav-apps-toggle-chevron" />
         </button>
 
         {showSidebarApps && (

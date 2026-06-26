@@ -279,8 +279,9 @@ textarea {
 /* 메뉴 / 앱 섹션 사이 구분선 */
 .nav-section-divider {
   height: 1px;
-  background: rgba(0,0,0,.12);
   margin: 14px 8px 10px;
+  background: linear-gradient(90deg, rgba(249,115,22,.5), rgba(249,115,22,.15));
+  border-radius: 1px;
 }
 
 /* 앱 섹션 접기/펼치기 토글 */
@@ -289,31 +290,49 @@ textarea {
   align-items: center;
   justify-content: space-between;
   width: 100%;
-  padding: 7px 10px;
+  padding: 8px 10px;
   margin: 0 0 4px;
-  background: rgba(0,0,0,.04);
+  background: rgba(249,115,22,.08);
   border: none;
-  border-radius: var(--r-sm);
+  border-left: 3px solid #f97316;
+  border-radius: 0 var(--r-sm) var(--r-sm) 0;
   cursor: pointer;
   transition: background var(--t);
 }
-.nav-apps-toggle:hover { background: rgba(0,0,0,.08); }
+.nav-apps-toggle:hover { background: rgba(249,115,22,.14); }
 
 .nav-apps-toggle-label {
   font-size: 11px;
-  font-weight: 600;
-  letter-spacing: .04em;
-  color: var(--ink-6);
-}
-.nav-apps-toggle-chevron {
-  font-size: 11px;
-  color: var(--ink-5);
-  line-height: 1;
+  font-weight: 700;
+  letter-spacing: .05em;
+  text-transform: uppercase;
+  color: #ea6c00;
 }
 
-/* 앱 링크는 외부 열기이므로 active 스타일 제외 */
+/* CSS chevron — 폰트 의존 없이 border로 그림 */
+.nav-apps-toggle-chevron {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-right: 2px solid #f97316;
+  border-bottom: 2px solid #f97316;
+  transform: rotate(-45deg);         /* 기본: ▶ 오른쪽 방향 */
+  transition: transform .2s ease;
+  margin-top: 1px;
+}
+.nav-apps-toggle[aria-expanded="true"] .nav-apps-toggle-chevron {
+  transform: rotate(45deg);          /* 펼침: ▼ 아래 방향 */
+  margin-top: -2px;
+}
+
+/* 앱 링크 목록 — orange 왼쪽 들여쓰기 */
+.nav-list-apps {
+  border-left: 2px solid rgba(249,115,22,.25);
+  margin-left: 6px;
+  padding-left: 4px;
+}
 .nav-list-apps a:hover {
-  background: rgba(0,0,0,.04);
+  background: rgba(249,115,22,.06);
 }
 
 .nav-list {
