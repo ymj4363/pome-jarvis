@@ -167,6 +167,8 @@ export default function App() {
   // 할 일 인라인 편집
   const [editingTaskId,    setEditingTaskId]    = useState<string | null>(null);
   const [editingTaskTitle, setEditingTaskTitle] = useState("");
+  const [editingTaskDue,   setEditingTaskDue]   = useState("");
+  const [editingTaskOwner, setEditingTaskOwner] = useState("");
 
   const approvalRef      = useRef<HTMLElement>(null);
   const lastRefreshedAt  = useRef<number>(0);       // 마지막 데이터 갱신 시각 (ms)
@@ -503,18 +505,29 @@ export default function App() {
     showToast(`할 일을 삭제했습니다.`, "info");
   };
 
-  /* ── 할 일 제목 편집 ─────────────────────────────────────────── */
-  const startEditTask = (taskId: string, currentTitle: string) => {
-    setEditingTaskId(taskId);
-    setEditingTaskTitle(currentTitle);
+  /* ── 할 일 편집 ─────────────────────────────────────────────── */
+  const startEditTask = (task: Task) => {
+    setEditingTaskId(task.id);
+    setEditingTaskTitle(task.title);
+    setEditingTaskDue(task.due === "미정" ? "" : task.due);
+    setEditingTaskOwner(task.owner);
   };
   const commitEditTask = (taskId: string) => {
     const trimmed = editingTaskTitle.trim();
-    if (trimmed) setTasks(current => current.map(t => t.id === taskId ? { ...t, title: trimmed } : t));
+    if (trimmed) setTasks(current => current.map(t =>
+      t.id === taskId ? { ...t, title: trimmed, due: editingTaskDue.trim() || "미정", owner: editingTaskOwner.trim() || t.owner } : t
+    ));
     setEditingTaskId(null);
     setEditingTaskTitle("");
+    setEditingTaskDue("");
+    setEditingTaskOwner("");
   };
-  const cancelEditTask = () => { setEditingTaskId(null); setEditingTaskTitle(""); };
+  const cancelEditTask = () => {
+    setEditingTaskId(null);
+    setEditingTaskTitle("");
+    setEditingTaskDue("");
+    setEditingTaskOwner("");
+  };
 
   /* ── 할 일 상단 고정 ─────────────────────────────────────────── */
   const handlePinTask = (taskId: string) => {
@@ -1266,31 +1279,56 @@ export default function App() {
                       />
                       <div style={{ flex: 1, minWidth: 0 }} onClick={e => e.preventDefault()}>
                         {editingTaskId === task.id ? (
-                          <input
-                            className="task-edit-input"
-                            value={editingTaskTitle}
-                            autoFocus
-                            onChange={e => setEditingTaskTitle(e.target.value)}
-                            onKeyDown={e => {
-                              if (e.key === "Enter") commitEditTask(task.id);
-                              if (e.key === "Escape") cancelEditTask();
-                            }}
-                            onBlur={() => commitEditTask(task.id)}
-                            onClick={e => e.stopPropagation()}
-                          />
+                          <div style={{ display: "flex", flexDirection: "column", gap: 4 }} onClick={e => e.stopPropagation()}>
+                            <input
+                              className="task-edit-input"
+                              value={editingTaskTitle}
+                              autoFocus
+                              placeholder="제목"
+                              onChange={e => setEditingTaskTitle(e.target.value)}
+                              onKeyDown={e => {
+                                if (e.key === "Enter") commitEditTask(task.id);
+                                if (e.key === "Escape") cancelEditTask();
+                              }}
+                            />
+                            <input
+                              className="task-edit-input"
+                              value={editingTaskOwner}
+                              placeholder="담당자"
+                              onChange={e => setEditingTaskOwner(e.target.value)}
+                              onKeyDown={e => {
+                                if (e.key === "Enter") commitEditTask(task.id);
+                                if (e.key === "Escape") cancelEditTask();
+                              }}
+                            />
+                            <input
+                              className="task-edit-input"
+                              value={editingTaskDue}
+                              placeholder="마감일 (예: 2026-07-01 또는 미정)"
+                              onChange={e => setEditingTaskDue(e.target.value)}
+                              onKeyDown={e => {
+                                if (e.key === "Enter") commitEditTask(task.id);
+                                if (e.key === "Escape") cancelEditTask();
+                              }}
+                            />
+                            <div style={{ display: "flex", gap: 4 }}>
+                              <button style={{ fontSize: 11, padding: "2px 8px" }} onClick={() => commitEditTask(task.id)}>저장</button>
+                              <button style={{ fontSize: 11, padding: "2px 8px" }} onClick={cancelEditTask}>취소</button>
+                            </div>
+                          </div>
                         ) : (
                           <strong>{task.title}</strong>
                         )}
-                        <span>{task.owner} · {task.due} · {task.source}</span>
+                        {editingTaskId !== task.id && <span>{task.owner} · {task.due} · {task.source}</span>}
                       </div>
                     </label>
                     <div className="task-actions">
                       <button
                         className="mail-trash-btn"
                         style={{ alignSelf: "center" }}
-                        onClick={() => startEditTask(task.id, task.title)}
-                        title="제목 수정"
-                        aria-label="제목 수정"
+                        onClick={() => startEditTask(task)}
+                        title="수정"
+                        aria-label="수정"
                       >
                         ✏️
                       </button>
