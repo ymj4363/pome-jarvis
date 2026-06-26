@@ -363,7 +363,7 @@ textarea {
   border-bottom: none;
 }
 .nav-list a:hover {
-  background: rgba(0,0,0,.03);
+  background: rgba(0,0,0,.08);
   color: var(--ink-8);
 }
 .nav-list a.active {
