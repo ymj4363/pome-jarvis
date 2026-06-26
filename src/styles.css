@@ -1716,13 +1716,15 @@ button.mail-trash-btn:hover {
   flex: 1 1 160px;
   min-width: 0;
   font-size: 13px;
-  padding: 0 12px;
-  height: 38px;
+  padding: 8px 12px;
+  min-height: 38px;
   border-radius: var(--r-sm);
   border: 1.5px solid var(--ink-2);
   background: var(--ink-0);
   color: var(--ink-7);
   font-family: inherit;
+  resize: vertical;
+  line-height: 1.5;
   transition: border-color var(--t), box-shadow var(--t);
 }
 .task-add-input:focus {

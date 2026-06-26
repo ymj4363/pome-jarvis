@@ -871,6 +871,22 @@ export default function App() {
             <span className="nav-icon">📊</span>
             <span className="nav-label-text">SalesLog</span>
           </a>
+          <a href="https://atix-invoice.pages.dev" target="_blank" rel="noopener noreferrer" style={{ cursor: "pointer" }}>
+            <span className="nav-icon">🧾</span>
+            <span className="nav-label-text">아티스 견적서</span>
+          </a>
+          <a href="https://jnc.jym-4ac.workers.dev" target="_blank" rel="noopener noreferrer" style={{ cursor: "pointer" }}>
+            <span className="nav-icon">📄</span>
+            <span className="nav-label-text">BSDF 측정 견적서</span>
+          </a>
+          <a href="https://atix-agent.pages.dev" target="_blank" rel="noopener noreferrer" style={{ cursor: "pointer" }}>
+            <span className="nav-icon">🤖</span>
+            <span className="nav-label-text">ATIX Flow</span>
+          </a>
+          <a href="https://rt300s-landing.pages.dev" target="_blank" rel="noopener noreferrer" style={{ cursor: "pointer" }}>
+            <span className="nav-icon">🔬</span>
+            <span className="nav-label-text">RT300s 소개</span>
+          </a>
         </nav>
 
         {/* 로컬 전용: 사용 순서 + 상황별 동작 */}
@@ -1244,13 +1260,15 @@ export default function App() {
               </div>
             </div>
             <div className="task-add-row">
-              <input
-                type="text"
+              <textarea
                 className="task-add-input"
-                placeholder="할 일 추가… (Enter)"
+                placeholder="할 일 추가… (Enter 추가 / Shift+Enter 줄바꿈)"
                 value={newTaskTitle}
+                rows={2}
                 onChange={e => setNewTaskTitle(e.target.value)}
-                onKeyDown={e => e.key === "Enter" && handleAddTask()}
+                onKeyDown={e => {
+                  if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleAddTask(); }
+                }}
               />
               <input
                 type="date"
