@@ -1279,7 +1279,7 @@ export default function App() {
                       />
                       <div style={{ flex: 1, minWidth: 0 }} onClick={e => e.preventDefault()}>
                         {editingTaskId === task.id ? (
-                          <div style={{ display: "flex", flexDirection: "column", gap: 4 }} onClick={e => e.stopPropagation()}>
+                          <div style={{ display: "flex", flexDirection: "column", gap: 4 }} onClick={e => { e.stopPropagation(); e.preventDefault(); }}>
                             <input
                               className="task-edit-input"
                               value={editingTaskTitle}
@@ -1313,8 +1313,8 @@ export default function App() {
                               }}
                             />
                             <div style={{ display: "flex", gap: 4 }}>
-                              <button style={{ fontSize: 11, padding: "2px 8px" }} onClick={() => commitEditTask(task.id)}>저장</button>
-                              <button style={{ fontSize: 11, padding: "2px 8px" }} onClick={cancelEditTask}>취소</button>
+                              <button type="button" style={{ fontSize: 11, padding: "2px 8px" }} onClick={e => { e.preventDefault(); e.stopPropagation(); commitEditTask(task.id); }}>저장</button>
+                              <button type="button" style={{ fontSize: 11, padding: "2px 8px" }} onClick={e => { e.preventDefault(); e.stopPropagation(); cancelEditTask(); }}>취소</button>
                             </div>
                           </div>
                         ) : (
