@@ -5,10 +5,10 @@
 /* ── Design Tokens ─────────────────────────────────────────────── */
 :root {
   /* Brand */
-  --brand:        #2563eb;
-  --brand-dark:   #1d4ed8;
-  --brand-light:  #eff6ff;
-  --brand-muted:  #bfdbfe;
+  --brand:        #f97316;
+  --brand-dark:   #ea580c;
+  --brand-light:  #fff7ed;
+  --brand-muted:  #fed7aa;
 
   /* Semantic status */
   --danger:        #dc2626;
@@ -280,7 +280,7 @@ textarea {
 .nav-section-divider {
   height: 1px;
   margin: 14px 8px 10px;
-  background: linear-gradient(90deg, rgba(249,115,22,.5), rgba(249,115,22,.15));
+  background: linear-gradient(90deg, rgba(234,88,12,.65), rgba(234,88,12,.15));
   border-radius: 1px;
 }
 
@@ -292,21 +292,21 @@ textarea {
   width: 100%;
   padding: 8px 10px;
   margin: 0 0 4px;
-  background: rgba(249,115,22,.08);
+  background: rgba(234,88,12,.10);
   border: none;
-  border-left: 3px solid #f97316;
+  border-left: 3px solid #ea580c;
   border-radius: 0 var(--r-sm) var(--r-sm) 0;
   cursor: pointer;
   transition: background var(--t);
 }
-.nav-apps-toggle:hover { background: rgba(249,115,22,.14); }
+.nav-apps-toggle:hover { background: rgba(234,88,12,.17); }
 
 .nav-apps-toggle-label {
   font-size: 11px;
   font-weight: 700;
   letter-spacing: .05em;
   text-transform: uppercase;
-  color: #ea6c00;
+  color: #c2410c;
 }
 
 /* CSS chevron — 폰트 의존 없이 border로 그림 */
@@ -314,8 +314,8 @@ textarea {
   display: inline-block;
   width: 6px;
   height: 6px;
-  border-right: 2px solid #f97316;
-  border-bottom: 2px solid #f97316;
+  border-right: 2px solid #ea580c;
+  border-bottom: 2px solid #ea580c;
   transform: rotate(-45deg);         /* 기본: ▶ 오른쪽 방향 */
   transition: transform .2s ease;
   margin-top: 1px;
@@ -327,12 +327,12 @@ textarea {
 
 /* 앱 링크 목록 — orange 왼쪽 들여쓰기 */
 .nav-list-apps {
-  border-left: 2px solid rgba(249,115,22,.25);
+  border-left: 2px solid rgba(234,88,12,.3);
   margin-left: 6px;
   padding-left: 4px;
 }
 .nav-list-apps a:hover {
-  background: rgba(249,115,22,.06);
+  background: rgba(234,88,12,.08);
 }
 
 .nav-list {
