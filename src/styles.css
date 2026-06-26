@@ -276,6 +276,47 @@ textarea {
   color: var(--ink-4);
 }
 
+/* 메뉴 / 앱 섹션 사이 구분선 */
+.nav-section-divider {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(0,0,0,.08) 20%, rgba(0,0,0,.08) 80%, transparent);
+  margin: 10px 4px 0;
+}
+
+/* 앱 섹션 접기/펼치기 토글 */
+.nav-apps-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 8px 8px 4px;
+  margin: 0;
+  background: none;
+  border: none;
+  cursor: pointer;
+  border-radius: var(--r-xs);
+  transition: background var(--t);
+}
+.nav-apps-toggle:hover { background: rgba(0,0,0,.04); }
+
+.nav-apps-toggle-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--ink-4);
+}
+.nav-apps-toggle-chevron {
+  font-size: 10px;
+  color: var(--ink-4);
+  line-height: 1;
+}
+
+/* 앱 링크는 외부 열기이므로 active 스타일 제외 */
+.nav-list-apps a:hover {
+  background: rgba(0,0,0,.04);
+}
+
 .nav-list {
   display: grid;
   gap: 2px;

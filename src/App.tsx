@@ -133,6 +133,9 @@ export default function App() {
   // 열린 할 일 전체 보기
   const [showAllOpenTasks, setShowAllOpenTasks] = useState(false);
 
+  // 사이드바 앱 섹션 접기/펼치기 (기본 접힘)
+  const [showSidebarApps, setShowSidebarApps] = useState(false);
+
   // 캘린더 조회 범위 (일수)
   const [calendarDays, setCalendarDays] = useState<1 | 3 | 7>(1);
   const [calendarLoading, setCalendarLoading] = useState(false);
@@ -884,29 +887,41 @@ export default function App() {
           })}
         </nav>
 
-        <p className="nav-label" style={{ marginTop: 20 }}>앱</p>
-        <nav className="nav-list" aria-label="연결된 앱">
-          <a href="https://saleslog-2wg.pages.dev" target="_blank" rel="noopener noreferrer" style={{ cursor: "pointer" }}>
-            <span className="nav-icon">📊</span>
-            <span className="nav-label-text">SalesLog</span>
-          </a>
-          <a href="https://atix-invoice.pages.dev" target="_blank" rel="noopener noreferrer" style={{ cursor: "pointer" }}>
-            <span className="nav-icon">🧾</span>
-            <span className="nav-label-text">아티스 견적서</span>
-          </a>
-          <a href="https://jnc.jym-4ac.workers.dev" target="_blank" rel="noopener noreferrer" style={{ cursor: "pointer" }}>
-            <span className="nav-icon">📄</span>
-            <span className="nav-label-text">BSDF 측정 견적서</span>
-          </a>
-          <a href="https://atix-agent.pages.dev" target="_blank" rel="noopener noreferrer" style={{ cursor: "pointer" }}>
-            <span className="nav-icon">🤖</span>
-            <span className="nav-label-text">ATIX Flow</span>
-          </a>
-          <a href="https://rt300s-landing.pages.dev" target="_blank" rel="noopener noreferrer" style={{ cursor: "pointer" }}>
-            <span className="nav-icon">🔬</span>
-            <span className="nav-label-text">RT300s 소개</span>
-          </a>
-        </nav>
+        <div className="nav-section-divider" />
+
+        <button
+          className="nav-apps-toggle"
+          onClick={() => setShowSidebarApps(s => !s)}
+          aria-expanded={showSidebarApps}
+        >
+          <span className="nav-apps-toggle-label">앱</span>
+          <span className="nav-apps-toggle-chevron">{showSidebarApps ? "▾" : "▸"}</span>
+        </button>
+
+        {showSidebarApps && (
+          <nav className="nav-list nav-list-apps" aria-label="연결된 앱">
+            <a href="https://saleslog-2wg.pages.dev" target="_blank" rel="noopener noreferrer">
+              <span className="nav-icon">📊</span>
+              <span className="nav-label-text">SalesLog</span>
+            </a>
+            <a href="https://atix-invoice.pages.dev" target="_blank" rel="noopener noreferrer">
+              <span className="nav-icon">🧾</span>
+              <span className="nav-label-text">아티스 견적서</span>
+            </a>
+            <a href="https://jnc.jym-4ac.workers.dev" target="_blank" rel="noopener noreferrer">
+              <span className="nav-icon">📄</span>
+              <span className="nav-label-text">BSDF 측정 견적서</span>
+            </a>
+            <a href="https://atix-agent.pages.dev" target="_blank" rel="noopener noreferrer">
+              <span className="nav-icon">🤖</span>
+              <span className="nav-label-text">ATIX Flow</span>
+            </a>
+            <a href="https://rt300s-landing.pages.dev" target="_blank" rel="noopener noreferrer">
+              <span className="nav-icon">🔬</span>
+              <span className="nav-label-text">RT300s 소개</span>
+            </a>
+          </nav>
+        )}
 
         {/* 로컬 전용: 사용 순서 + 상황별 동작 */}
         {IS_LOCAL && (
