@@ -34,19 +34,19 @@
   --ink-0: #f8fafc;
   --white: #ffffff;
 
-  /* Shadows — 더 자연스럽게 */
-  --sh-xs: 0 1px 2px rgba(15, 23, 42, .05);
-  --sh-sm: 0 1px 3px rgba(15, 23, 42, .10), 0 1px 2px rgba(15, 23, 42, .06);
-  --sh-md: 0 4px 6px -1px rgba(15, 23, 42, .08), 0 2px 4px -1px rgba(15, 23, 42, .05);
-  --sh-lg: 0 10px 15px -3px rgba(15, 23, 42, .10), 0 4px 6px -2px rgba(15, 23, 42, .05);
-  --sh-xl: 0 20px 25px -5px rgba(15, 23, 42, .12), 0 8px 10px -4px rgba(15, 23, 42, .06);
+  /* Shadows — Apple 다층 소프트 */
+  --sh-xs: 0 1px 4px rgba(0,0,0,.04), 0 0 0 0.5px rgba(0,0,0,.04);
+  --sh-sm: 0 2px 10px rgba(0,0,0,.06), 0 0 0 0.5px rgba(0,0,0,.05);
+  --sh-md: 0 6px 20px rgba(0,0,0,.09), 0 0 0 0.5px rgba(0,0,0,.06);
+  --sh-lg: 0 12px 36px rgba(0,0,0,.11), 0 0 0 0.5px rgba(0,0,0,.07);
+  --sh-xl: 0 24px 64px rgba(0,0,0,.15), 0 0 0 0.5px rgba(0,0,0,.08);
 
-  /* Radius */
-  --r-xs: 4px;
-  --r-sm: 8px;
-  --r:    12px;
-  --r-lg: 16px;
-  --r-xl: 24px;
+  /* Radius — Apple 스타일 */
+  --r-xs: 6px;
+  --r-sm: 10px;
+  --r:    14px;
+  --r-lg: 20px;
+  --r-xl: 28px;
   --r-f:  9999px;
 
   /* Motion */
@@ -65,7 +65,7 @@
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
-  background: var(--ink-0);
+  background: #f5f5f7; /* macOS 시스템 배경 */
   color: var(--ink);
 }
 
@@ -225,8 +225,10 @@ textarea {
   flex-direction: column;
   gap: 4px;
   padding: 22px 16px;
-  border-right: 1.5px solid var(--ink-2);
-  background: var(--white);
+  border-right: 1px solid rgba(0,0,0,.07);
+  background: rgba(255,255,255,.82);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
   overflow-y: auto;
 }
 
@@ -283,7 +285,7 @@ textarea {
   align-items: center;
   gap: 9px;
   border-radius: var(--r-sm);
-  padding: 10px 12px;
+  padding: 9px 12px 9px 15px;
   font-size: 14px;
   font-weight: 500;
   color: var(--ink-6);
@@ -291,15 +293,17 @@ textarea {
   transition: background var(--t), color var(--t);
   position: relative;
   letter-spacing: -.01em;
+  border-left: 3px solid transparent;
 }
 .nav-list a:hover {
-  background: var(--ink-1);
+  background: rgba(0,0,0,.04);
   color: var(--ink-8);
 }
 .nav-list a.active {
-  background: var(--brand-light);
+  background: rgba(37,99,235,.09);
   color: var(--brand);
   font-weight: 700;
+  border-left-color: var(--brand);
 }
 .nav-icon {
   font-size: 15px;
@@ -425,8 +429,8 @@ textarea {
 }
 .hero-metric {
   border-radius: var(--r);
-  background: rgba(255, 255, 255, .07);
-  border: 1px solid rgba(255, 255, 255, .1);
+  background: rgba(255, 255, 255, .08);
+  border: 1px solid rgba(255, 255, 255, .12);
   padding: 14px 18px;
   display: flex;
   align-items: center;
@@ -434,9 +438,13 @@ textarea {
   gap: 20px;
   min-width: 170px;
   backdrop-filter: blur(6px);
-  transition: background var(--t);
+  transition: background var(--t), transform var(--t-s), box-shadow var(--t-s);
 }
-.hero-metric:hover { background: rgba(255, 255, 255, .11); }
+.hero-metric:hover {
+  background: rgba(255, 255, 255, .14);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0,0,0,.25);
+}
 .hero-metric strong {
   font-size: 28px;
   font-weight: 800;
@@ -462,9 +470,9 @@ textarea {
 .panel {
   border-radius: var(--r-lg);
   background: var(--white);
-  padding: 26px 28px;
+  padding: 28px 30px;
   box-shadow: var(--sh-sm);
-  border: 1.5px solid var(--ink-2);
+  border: none;
 }
 .panel h2 {
   font-size: 18px;
@@ -488,12 +496,16 @@ textarea {
   justify-content: space-between;
   align-items: center;
   gap: 12px;
-  border-radius: var(--r-sm);
+  border-radius: var(--r);
   background: var(--ink-0);
-  padding: 10px 14px;
-  transition: background var(--t);
+  padding: 11px 14px;
+  transition: background var(--t), box-shadow var(--t-s), transform var(--t-s);
 }
-.row-item:hover { background: var(--ink-1); }
+.row-item:hover {
+  background: var(--white);
+  box-shadow: var(--sh-sm);
+  transform: translateY(-1px);
+}
 .row-item strong {
   display: block;
   font-size: 13px;
@@ -595,30 +607,31 @@ textarea {
   gap: 14px;
 }
 .mail-card {
-  border-radius: var(--r);
-  border: 1.5px solid var(--ink-2);
+  border-radius: var(--r-lg);
+  border: none;
   background: var(--white);
-  padding: 18px 20px;
+  padding: 20px 22px;
   display: flex;
   flex-direction: column;
   gap: 8px;
-  transition: box-shadow var(--t), transform var(--t), border-color var(--t);
+  box-shadow: var(--sh-sm);
+  transition: box-shadow var(--t-s), transform var(--t-s);
   cursor: default;
 }
 .mail-card:hover {
-  box-shadow: var(--sh-md);
-  transform: translateY(-2px);
+  box-shadow: var(--sh-lg);
+  transform: translateY(-3px);
 }
 .mail-card.urgent {
-  border-color: var(--danger-border);
-  background: linear-gradient(160deg, var(--danger-bg) 0%, var(--white) 60%);
+  background: linear-gradient(160deg, var(--danger-bg) 0%, var(--white) 65%);
+  box-shadow: var(--sh-sm), 0 0 0 1px var(--danger-border);
 }
-.mail-card.urgent:hover { border-color: var(--danger); }
+.mail-card.urgent:hover { box-shadow: var(--sh-lg), 0 0 0 1px var(--danger); }
 .mail-card.reply_needed {
-  border-color: var(--brand-muted);
-  background: linear-gradient(160deg, var(--brand-light) 0%, var(--white) 60%);
+  background: linear-gradient(160deg, var(--brand-light) 0%, var(--white) 65%);
+  box-shadow: var(--sh-sm), 0 0 0 1px var(--brand-muted);
 }
-.mail-card.reply_needed:hover { border-color: var(--brand); }
+.mail-card.reply_needed:hover { box-shadow: var(--sh-lg), 0 0 0 1px var(--brand); }
 .mail-card h3 {
   font-size: 14px;
   font-weight: 700;
@@ -692,11 +705,12 @@ textarea {
   display: flex;
   gap: 10px;
   align-items: flex-start;
-  border-radius: var(--r-sm);
-  border: 1.5px solid var(--ink-2);
-  background: var(--white);
-  padding: 12px 14px;
-  transition: background var(--t), opacity var(--t), box-shadow var(--t);
+  border-radius: var(--r);
+  border: none;
+  background: var(--ink-0);
+  padding: 14px 16px;
+  box-shadow: 0 1px 3px rgba(0,0,0,.04);
+  transition: background var(--t), opacity var(--t), box-shadow var(--t-s), transform var(--t-s);
   min-width: 0;
   position: relative;
 }
@@ -704,7 +718,11 @@ textarea {
   flex: 1;
   min-width: 0;
 }
-.task-card:hover { background: #f8fbff; box-shadow: var(--sh-sm); }
+.task-card:hover {
+  background: var(--white);
+  box-shadow: var(--sh-md);
+  transform: translateY(-1px);
+}
 .task-card strong {
   display: block;
   font-size: 14px;
@@ -722,8 +740,8 @@ textarea {
   margin-top: 4px;
   word-break: keep-all;
 }
-.task-card.done { opacity: .5; }
-.task-card.done strong { text-decoration: line-through; color: var(--ink-5); }
+.task-card.done { opacity: .35; }
+.task-card.done strong { text-decoration: none; color: var(--ink-6); }
 .task-card button {
   min-width: 54px;
   padding: 0 10px;
@@ -741,21 +759,22 @@ textarea {
   align-items: stretch;
   gap: 16px;
   justify-content: space-between;
-  border-radius: var(--r);
-  border: 1.5px solid var(--ink-2);
+  border-radius: var(--r-lg);
+  border: none;
   background: var(--white);
   padding: 20px 22px;
-  transition: box-shadow var(--t), transform var(--t);
+  box-shadow: var(--sh-sm);
+  transition: box-shadow var(--t-s), transform var(--t-s);
 }
-.approval-card:hover { box-shadow: var(--sh-md); }
+.approval-card:hover { box-shadow: var(--sh-md); transform: translateY(-1px); }
 .approval-card.approved {
   background: var(--success-bg);
-  border-color: var(--success-border);
+  box-shadow: var(--sh-sm), 0 0 0 1px var(--success-border);
 }
 .approval-card.rejected {
   background: var(--danger-bg);
-  border-color: var(--danger-border);
-  opacity: .7;
+  box-shadow: var(--sh-sm), 0 0 0 1px var(--danger-border);
+  opacity: .65;
 }
 .approval-card > div:first-child { flex: 1; min-width: 0; }
 .approval-card h3 {
@@ -828,14 +847,15 @@ textarea {
   grid-template-columns: 130px 210px minmax(0, 1fr);
   gap: 16px;
   align-items: center;
-  border-radius: var(--r-sm);
+  border-radius: var(--r);
   background: var(--white);
-  border: 1.5px solid var(--ink-1);
+  border: none;
+  box-shadow: var(--sh-xs);
   padding: 11px 16px 11px 34px;
   position: relative;
-  transition: background var(--t), box-shadow var(--t);
+  transition: box-shadow var(--t), transform var(--t);
 }
-.log-row:hover { background: var(--ink-0); box-shadow: var(--sh-xs); }
+.log-row:hover { box-shadow: var(--sh-sm); transform: translateY(-1px); }
 .log-row::before {
   content: '';
   position: absolute;
@@ -874,18 +894,20 @@ textarea {
 /* ── Empty state ────────────────────────────────────────────────── */
 .empty-state {
   text-align: center;
-  padding: 48px 20px;
+  padding: 64px 20px;
   color: var(--ink-5);
 }
 .empty-icon {
-  font-size: 38px;
-  margin-bottom: 14px;
-  opacity: .75;
+  font-size: 44px;
+  margin-bottom: 16px;
+  opacity: .6;
 }
 .empty-state p {
   font-size: 14px;
-  line-height: 1.7;
+  line-height: 1.8;
   color: var(--ink-5);
+  max-width: 240px;
+  margin: 0 auto;
 }
 
 /* ── Toast ──────────────────────────────────────────────────────── */
@@ -1026,11 +1048,11 @@ textarea {
   margin: calc(-1 * var(--pad)) calc(-1 * var(--pad)) 0;
   padding: 0 var(--pad);
   height: 58px;
-  background: rgba(248, 250, 252, 0.95);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border-bottom: 1.5px solid var(--ink-2);
-  box-shadow: 0 1px 0 rgba(15,23,42,.04);
+  background: rgba(245, 245, 247, .88);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-bottom: 1px solid rgba(0,0,0,.06);
+  box-shadow: 0 1px 0 rgba(0,0,0,.04);
 }
 
 .topbar-brand {
@@ -1582,10 +1604,12 @@ button.mail-trash-btn:hover {
     left: 0;
     right: 0;
     z-index: 200;
-    background: var(--white);
-    border-top: 1px solid var(--ink-2);
+    background: rgba(255,255,255,.88);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-top: 1px solid rgba(0,0,0,.06);
     padding: 6px 4px env(safe-area-inset-bottom, 6px);
-    box-shadow: 0 -4px 20px rgba(0, 0, 0, .08);
+    box-shadow: 0 -4px 24px rgba(0,0,0,.06);
   }
   .mobile-nav a {
     flex: 1;
@@ -1657,51 +1681,29 @@ button.mail-trash-btn:hover {
 
 /* ── Section Accent Colors ──────────────────────────────────────── */
 
-/* 오늘 일정 패널 — 보라 */
-.panel-calendar {
-  border-top: 3px solid #7c3aed;
-}
-.panel-calendar > h2::before {
-  content: "";
-}
+/* 오늘 일정 패널 */
+.panel-calendar { /* shadow only — no top border */ }
 
-/* AI 브리핑 패널 — 브랜드 블루 */
-.panel-briefing {
-  border-top: 3px solid var(--brand);
-}
+/* AI 브리핑 패널 */
+.panel-briefing { /* shadow only */ }
 
-/* 회의록 섹션 — 스카이 블루 */
-.section-meeting > .panel {
-  border-top: 3px solid #0284c7;
-}
+/* 회의록 섹션 */
 .section-meeting .eyebrow { color: #0284c7; font-weight: 600; }
 
-/* 이메일 섹션 — 브랜드 블루 */
-.section-mail {
-  border-top: 3px solid var(--brand);
-  background: linear-gradient(180deg, #f0f6ff 0px, var(--white) 72px);
-}
+/* 이메일 섹션 */
+.section-mail { }
 .section-mail .eyebrow { color: var(--brand); font-weight: 600; }
 
-/* 할 일 섹션 — 그린 */
-.section-tasks {
-  border-top: 3px solid var(--success);
-  background: linear-gradient(180deg, #f0faf4 0px, var(--white) 72px);
-}
+/* 할 일 섹션 */
+.section-tasks { }
 .section-tasks .eyebrow { color: var(--success); font-weight: 600; }
 
-/* 승인 대기함 — 앰버 */
-.section-approval {
-  border-top: 3px solid #d97706;
-  background: linear-gradient(180deg, #fffbf0 0px, var(--white) 72px);
-}
+/* 승인 대기함 */
+.section-approval { }
 .section-approval .eyebrow { color: #d97706; font-weight: 600; }
 
-/* 실행 로그 — 중성 그레이 */
-.section-log {
-  border-top: 3px solid var(--ink-4);
-  background: linear-gradient(180deg, #f7f8fa 0px, var(--white) 60px);
-}
+/* 실행 로그 */
+.section-log { }
 .section-log .eyebrow { color: var(--ink-5); font-weight: 600; }
 
 /* ── 할 일 직접 추가 인풋 ────────────────────────────────────────── */
@@ -1753,10 +1755,7 @@ button.mail-trash-btn:hover {
 }
 
 /* ── 에이전트 섹션 ───────────────────────────────────────────────── */
-.section-agent {
-  border-top: 3px solid #7c3aed;
-  background: linear-gradient(180deg, #f5f3ff 0px, var(--white) 72px);
-}
+.section-agent { }
 .section-agent .eyebrow { color: #7c3aed; font-weight: 600; }
 
 /* 사이드바 스텝 */
@@ -1975,10 +1974,13 @@ button.mail-trash-btn:hover {
 
 /* ── 할 일 상단 고정 ─────────────────────────────────────────────── */
 .task-card.pinned {
-  border-left: 4px solid #f97316;
-  background: #fff8ed;
+  box-shadow: var(--sh-sm), inset 3px 0 0 #f97316;
+  background: #fffbf5;
 }
-.task-card.pinned:hover { background: #fff3df; }
+.task-card.pinned:hover {
+  box-shadow: var(--sh-md), inset 3px 0 0 #f97316;
+  background: var(--white);
+}
 .task-actions .mail-trash-btn.pin-active {
   opacity: 1 !important;
   color: #7c2d12 !important;
