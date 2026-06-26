@@ -1591,6 +1591,45 @@ button.mail-trash-btn:hover {
   line-height: 1.65;
 }
 
+/* ── Mobile Apps Bar — 사이드바 앱 링크 모바일 보완 ────────────── */
+.mobile-apps-bar {
+  display: none;
+}
+
+@media (max-width: 640px) {
+  .mobile-apps-bar {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    padding: 2px 0 6px;
+    margin: -4px 0 0;
+  }
+  .mobile-apps-bar::-webkit-scrollbar { display: none; }
+
+  .mobile-app-chip {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    flex-shrink: 0;
+    padding: 6px 12px;
+    border-radius: var(--r-f);
+    background: var(--white);
+    box-shadow: var(--sh-xs);
+    text-decoration: none;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--ink-7);
+    white-space: nowrap;
+    transition: box-shadow var(--t), transform var(--t);
+  }
+  .mobile-app-chip:active {
+    transform: scale(.96);
+    box-shadow: none;
+  }
+}
+
 /* ── Mobile Bottom Nav ───────────────────────────────────────────── */
 .mobile-nav {
   display: none;

@@ -997,6 +997,22 @@ export default function App() {
 
         {dataLoading && <div className="data-loading-bar" />}
 
+        {/* 모바일 전용 앱 바 — 사이드바 숨김 보완 */}
+        <nav className="mobile-apps-bar" aria-label="연결된 앱">
+          {[
+            { label: "SalesLog",    icon: "📊", href: "https://saleslog-2wg.pages.dev" },
+            { label: "아티스 견적서", icon: "🧾", href: "https://atix-invoice.pages.dev" },
+            { label: "BSDF 견적서",  icon: "📄", href: "https://jnc.jym-4ac.workers.dev" },
+            { label: "ATIX Flow",   icon: "🤖", href: "https://atix-agent.pages.dev" },
+            { label: "RT300s",      icon: "🔬", href: "https://rt300s-landing.pages.dev" },
+          ].map(app => (
+            <a key={app.href} href={app.href} target="_blank" rel="noopener noreferrer" className="mobile-app-chip">
+              <span>{app.icon}</span>
+              <span>{app.label}</span>
+            </a>
+          ))}
+        </nav>
+
         {!IS_LOCAL && (<>
         {activeSection === "briefing" && <header className="hero" id="briefing">
           <div className="hero-text">
