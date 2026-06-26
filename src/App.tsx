@@ -865,6 +865,14 @@ export default function App() {
           })}
         </nav>
 
+        <p className="nav-label" style={{ marginTop: 20 }}>앱</p>
+        <nav className="nav-list" aria-label="연결된 앱">
+          <a href="https://saleslog-2wg.pages.dev" target="_blank" rel="noopener noreferrer" style={{ cursor: "pointer" }}>
+            <span className="nav-icon">📊</span>
+            <span className="nav-label-text">SalesLog</span>
+          </a>
+        </nav>
+
         {/* 로컬 전용: 사용 순서 + 상황별 동작 */}
         {IS_LOCAL && (
           <div style={{ marginTop: 20, display: "flex", flexDirection: "column", gap: 16, padding: "0 2px" }}>
