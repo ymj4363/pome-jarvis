@@ -13,66 +13,12 @@ import {
   type AuthState
 } from "./services/googleAuthService";
 import { createLog } from "./services/logService";
-import { browseDir, fetchAgentServerStatus, fetchAgents, killAgent, runAgent, streamAgent } from "./services/agentService";
-import type { AgentTask, Approval, BriefingResult, CalendarEvent, CalendarEventData, LogEntry, Mail, Task } from "./types";
+import { fetchAgentServerStatus } from "./services/agentService";
+import type { Approval, BriefingResult, CalendarEvent, CalendarEventData, LogEntry, Mail, Task } from "./types";
 import { usePersistentState } from "./usePersistentState";
-
-/* ── 상수 ───────────────────────────────────────────────────────── */
-
-type Toast       = { id: string; message: string; type: "success" | "error" | "info" };
-type MeetingMode = "text" | "file" | "voice";
-
-const LABEL_TEXT: Record<string, string> = {
-  urgent:       "긴급",
-  reply_needed: "답장 필요",
-  reference:    "참고"
-};
-
-const RISK_TEXT: Record<string, string> = {
-  low:    "위험 낮음",
-  medium: "위험 중간",
-  high:   "위험 높음"
-};
-
-const IS_LOCAL = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
-
-const NAV_ITEMS = IS_LOCAL
-  ? [{ id: "agent", icon: "🤖", label: "에이전트" }]
-  : [
-      { id: "briefing", icon: "📊", label: "운영판" },
-      { id: "meeting",  icon: "📝",  label: "회의록" },
-      { id: "mail",     icon: "✉️",  label: "메일" },
-      { id: "approval", icon: "✅",  label: "승인" },
-      { id: "agent",    icon: "🤖",  label: "에이전트" },
-      { id: "log",      icon: "📋",  label: "로그" }
-    ];
-
-const MAX_AGENTS = 10;
-
-const AGENT_STATUS_LABEL: Record<string, string> = {
-  pending: "대기",
-  running: "실행 중",
-  done:    "완료",
-  error:   "오류",
-  killed:  "중단됨",
-};
-
-const MEETING_TABS: { id: MeetingMode; icon: string; label: string }[] = [
-  { id: "text",  icon: "📝", label: "텍스트" },
-  { id: "file",  icon: "📎", label: "이미지·문서" },
-  { id: "voice", icon: "🎤", label: "음성 인식" }
-];
-
-function GoogleIcon() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
-      <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
-      <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
-      <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
-    </svg>
-  );
-}
+import { GoogleIcon, IS_LOCAL, LABEL_TEXT, MEETING_TABS, NAV_ITEMS, RISK_TEXT, type MeetingMode, type Toast } from "./constants";
+import AgentSection from "./agent/AgentSection";
+import MailModal from "./mail/MailModal";
 
 /* ── 컴포넌트 ───────────────────────────────────────────────────── */
 
@@ -147,21 +93,9 @@ export default function App() {
   // 실행 로그
   const [showLog, setShowLog] = useState(true);
 
-  /* ── 에이전트 ───────────────────────────────────────────────── */
-  const [agents, setAgents] = useState<AgentTask[]>([]);
+  /* ── 에이전트 서버 상태 (사이드바·AgentSection 공용) ─────────── */
   const [agentServerOnline, setAgentServerOnline] = useState(false);
   const [agentServerInfo, setAgentServerInfo] = useState<{ running: number; total: number; max: number } | null>(null);
-  const [agentPrompt, setAgentPrompt] = useState("");
-  const [agentWorkdir, setAgentWorkdir] = useState("D:\\py\\pome-jarvis");
-  const [agentSkipPerms, setAgentSkipPerms] = useState(true);
-  const [agentLaunching, setAgentLaunching] = useState(false);
-  const [expandedAgentId, setExpandedAgentId] = useState<string | null>(null);
-  const streamCleanups = useRef<Map<string, () => void>>(new Map());
-
-  // 폴더 피커
-  const [showFolderPicker, setShowFolderPicker] = useState(false);
-  const [browseData, setBrowseData] = useState<{ path: string; parent: string | null; dirs: { name: string; path: string }[] } | null>(null);
-  const [browseLoading, setBrowseLoading] = useState(false);
 
   // 섹션 접기/펼치기
   const [showMails, setShowMails] = useState(true);
@@ -314,100 +248,6 @@ export default function App() {
     const t = setInterval(check, 5000);
     return () => clearInterval(t);
   }, []);
-
-  useEffect(() => {
-    if (!agentServerOnline) return;
-    fetchAgents().then(list => {
-      setAgents(list);
-      for (const a of list) {
-        if (a.status === "running" && !streamCleanups.current.has(a.id)) {
-          attachStream(a.id);
-        }
-      }
-    }).catch(() => {});
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [agentServerOnline]);
-
-  const attachStream = (id: string) => {
-    const cleanup = streamAgent(
-      id,
-      text => setAgents(prev => prev.map(a => a.id === id ? { ...a, output: a.output + text } : a)),
-      code => {
-        setAgents(prev => prev.map(a =>
-          a.id === id ? { ...a, status: code === 0 ? "done" : code === null ? "killed" : "error", exitCode: code ?? undefined, completedAt: new Date().toISOString() } : a
-        ));
-        streamCleanups.current.delete(id);
-      }
-    );
-    streamCleanups.current.set(id, cleanup);
-  };
-
-  const handleRunAgent = async () => {
-    if (!agentPrompt.trim()) return;
-    const runningCount = agents.filter(a => a.status === "running").length;
-    if (runningCount >= MAX_AGENTS) { showToast(`최대 ${MAX_AGENTS}개까지 동시 실행 가능합니다.`, "error"); return; }
-    setAgentLaunching(true);
-    try {
-      const { id } = await runAgent({ prompt: agentPrompt, workdir: agentWorkdir, skipPermissions: agentSkipPerms });
-      const newAgent: AgentTask = {
-        id, prompt: agentPrompt, workdir: agentWorkdir,
-        skipPermissions: agentSkipPerms,
-        status: "running", output: "",
-        createdAt: new Date().toISOString(),
-        startedAt: new Date().toISOString(),
-      };
-      setAgents(prev => [newAgent, ...prev]);
-      setAgentPrompt("");
-      setExpandedAgentId(id);
-      attachStream(id);
-      addLog({ action: "agent.started", detail: `에이전트 실행: "${agentPrompt.slice(0, 60)}…"`, status: "pending" });
-      showToast("에이전트를 실행했습니다.", "success");
-    } catch (err) {
-      showToast(`실행 실패: ${err instanceof Error ? err.message : "오류"}`, "error");
-    } finally {
-      setAgentLaunching(false);
-    }
-  };
-
-  const handleKillAgent = async (id: string) => {
-    await killAgent(id);
-    setAgents(prev => prev.map(a => a.id === id ? { ...a, status: "killed", completedAt: new Date().toISOString() } : a));
-    streamCleanups.current.get(id)?.();
-    streamCleanups.current.delete(id);
-    addLog({ action: "agent.killed", detail: `에이전트 중단 (${id.slice(0, 8)})`, status: "failed" });
-    showToast("에이전트를 중단했습니다.", "info");
-  };
-
-  const openFolderPicker = async () => {
-    setShowFolderPicker(true);
-    setBrowseLoading(true);
-    try {
-      const data = await browseDir("__drives__");
-      setBrowseData(data);
-    } catch { showToast("폴더 탐색 실패", "error"); }
-    finally { setBrowseLoading(false); }
-  };
-
-  const navigateTo = async (path: string) => {
-    setBrowseLoading(true);
-    try {
-      const data = await browseDir(path);
-      setBrowseData(data);
-    } catch { showToast("접근할 수 없는 폴더입니다.", "error"); }
-    finally { setBrowseLoading(false); }
-  };
-
-  const selectFolder = (path: string) => {
-    setAgentWorkdir(path);
-    setShowFolderPicker(false);
-    setBrowseData(null);
-  };
-
-  const handleClearDoneAgents = () => {
-    const toRemove = agents.filter(a => a.status !== "running").map(a => a.id);
-    setAgents(prev => prev.filter(a => a.status === "running"));
-    toRemove.forEach(id => { streamCleanups.current.get(id)?.(); streamCleanups.current.delete(id); });
-  };
 
   /* ── 탭 복귀 시 자동 새로고침 (10분 쿨다운) ─────────────────── */
   useEffect(() => {
@@ -1707,114 +1547,12 @@ export default function App() {
 
         </>)}
 
-        {IS_LOCAL && <section className="panel section-agent" id="agent">
-          <div className="section-head">
-            <div>
-              <p className="eyebrow">Claude Code CLI</p>
-              <h2>에이전트 실행 관리</h2>
-            </div>
-            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <span className={`agent-server-badge ${agentServerOnline ? "online" : "offline"}`}>
-                {agentServerOnline ? `● 서버 연결됨 (${agentServerInfo?.running ?? 0}/${MAX_AGENTS} 실행 중)` : "○ 서버 오프라인"}
-              </span>
-              {agents.some(a => a.status !== "running") && (
-                <button className="ghost" style={{ minHeight: 28, padding: "0 10px", fontSize: 12 }} onClick={handleClearDoneAgents}>
-                  🗑️ 완료 정리
-                </button>
-              )}
-            </div>
-          </div>
-
-          {!agentServerOnline && (
-            <div className="notice" style={{ marginBottom: 16 }}>
-              에이전트 서버가 오프라인입니다. CMD에서 <code style={{ background: "var(--ink-2)", padding: "1px 6px", borderRadius: 4, fontSize: 12 }}>npm run agent</code> 를 실행하세요.
-            </div>
-          )}
-
-          {/* 실행 폼 */}
-          <div className="agent-form">
-            <div className="agent-form-header">
-              <span className="agent-form-header-title">새 에이전트</span>
-              <span className={`agent-form-header-count${agents.filter(a => a.status === "running").length >= MAX_AGENTS ? " full" : ""}`}>
-                {agents.filter(a => a.status === "running").length} / {MAX_AGENTS} 실행 중
-              </span>
-            </div>
-            <div className="agent-form-body">
-              <div className="agent-form-field">
-                <label className="agent-form-label">작업 폴더</label>
-                <div className="agent-folder-row">
-                  <div className="agent-folder-display">
-                    <span>📁</span>
-                    {agentWorkdir
-                      ? <span>{agentWorkdir}</span>
-                      : <span className="agent-folder-placeholder">폴더를 선택하세요</span>}
-                  </div>
-                  <button className="ghost" onClick={openFolderPicker} disabled={!agentServerOnline} style={{ padding: "0 14px" }}>
-                    📂 찾아보기
-                  </button>
-                </div>
-              </div>
-              <div className="agent-form-field">
-                <label className="agent-form-label">지시 내용</label>
-                <textarea
-                  placeholder="Claude Code에게 시킬 작업을 자연어로 입력하세요…"
-                  value={agentPrompt}
-                  onChange={e => setAgentPrompt(e.target.value)}
-                  style={{ minHeight: 100 }}
-                />
-              </div>
-              <div className="agent-form-footer">
-                <label className="agent-perm-label">
-                  <input type="checkbox" checked={agentSkipPerms} onChange={e => setAgentSkipPerms(e.target.checked)} style={{ accentColor: "var(--brand)", width: 15, height: 15 }} />
-                  권한 자동승인
-                </label>
-                <button
-                  disabled={!agentPrompt.trim() || !agentWorkdir || !agentServerOnline || agentLaunching || agents.filter(a => a.status === "running").length >= MAX_AGENTS}
-                  onClick={handleRunAgent}
-                >
-                  {agentLaunching ? <><span className="spinner" />실행 중…</> : "🤖 에이전트 실행"}
-                </button>
-              </div>
-            </div>
-          </div>
-
-          {/* 에이전트 목록 */}
-          {agents.length === 0 ? (
-            <div className="empty-state"><div className="empty-icon">🤖</div><p>실행 중인 에이전트가 없습니다.</p></div>
-          ) : (
-            <div className="agent-list">
-              {agents.map(agent => (
-                <div key={agent.id} className={`agent-card ${agent.status}`}>
-                  <div className="agent-card-header" onClick={() => setExpandedAgentId(id => id === agent.id ? null : agent.id)}>
-                    <span className="agent-card-icon">
-                      {agent.status === "running" ? "⏳" : agent.status === "done" ? "✅" : agent.status === "error" ? "❌" : "⏹"}
-                    </span>
-                    <div className="agent-card-body">
-                      <div className="agent-card-prompt">
-                        {agent.prompt.slice(0, 80)}{agent.prompt.length > 80 ? "…" : ""}
-                      </div>
-                      <div className="agent-card-meta">
-                        <span className="agent-card-path">📁 {agent.workdir}</span>
-                        <span className={`agent-status-badge ${agent.status}`}>{AGENT_STATUS_LABEL[agent.status]}</span>
-                      </div>
-                    </div>
-                    <div className="agent-card-actions">
-                      {agent.status === "running" && (
-                        <button className="agent-kill-btn" onClick={e => { e.stopPropagation(); handleKillAgent(agent.id); }}>
-                          ⏹ 중단
-                        </button>
-                      )}
-                      <span className="agent-card-chevron">{expandedAgentId === agent.id ? "▲" : "▼"}</span>
-                    </div>
-                  </div>
-                  {expandedAgentId === agent.id && (
-                    <pre className="agent-output">{agent.output || "(출력 없음)"}</pre>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
-        </section>}
+        {IS_LOCAL && <AgentSection
+          agentServerOnline={agentServerOnline}
+          agentServerInfo={agentServerInfo}
+          showToast={showToast}
+          addLog={addLog}
+        />}
 
         {!IS_LOCAL && (<>
         {/* 에이전트 모드 사용 순서 */}
@@ -1929,114 +1667,15 @@ export default function App() {
         ))}
       </div>
 
-      {/* ── 폴더 피커 모달 (윈도우 탐색기 스타일) ──────────────── */}
-      {showFolderPicker && (
-        <div className="modal-overlay" onClick={() => setShowFolderPicker(false)} role="dialog" aria-modal="true">
-          <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: 560, width: "95%", padding: 0, overflow: "hidden" }}>
-
-            {/* 타이틀바 */}
-            <div style={{ padding: "10px 16px", background: "#f3f3f3", borderBottom: "1px solid #ddd", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-              <span style={{ fontSize: 13, fontWeight: 600, color: "#333" }}>폴더 찾아보기</span>
-              <button className="ghost" style={{ minHeight: 24, padding: "0 8px", fontSize: 13 }} onClick={() => setShowFolderPicker(false)}>✕</button>
-            </div>
-
-            {/* 주소창 */}
-            <div style={{ padding: "8px 12px", background: "#fafafa", borderBottom: "1px solid #e5e5e5", display: "flex", alignItems: "center", gap: 6 }}>
-              <button
-                className="ghost"
-                style={{ minHeight: 28, padding: "0 8px", fontSize: 13, flexShrink: 0 }}
-                onClick={() => browseData?.parent && navigateTo(browseData.parent)}
-                disabled={!browseData?.parent}
-                title="상위 폴더"
-              >↑</button>
-              <div style={{
-                flex: 1, padding: "5px 10px", background: "var(--white)",
-                border: "1px solid #c0c0c0", borderRadius: 4,
-                fontSize: 13, fontFamily: "monospace", color: "#333",
-                overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap"
-              }}>
-                {browseData?.path === "__drives__" ? "내 PC" : (browseData?.path ?? "")}
-              </div>
-            </div>
-
-            {/* 폴더 목록 */}
-            <div style={{ height: 360, overflowY: "auto", background: "var(--white)" }}>
-              {browseLoading ? (
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%" }}>
-                  <span className="spinner" style={{ width: 22, height: 22, borderWidth: 3, borderColor: "rgba(0,0,0,.1)", borderTopColor: "var(--brand)" }} />
-                </div>
-              ) : browseData?.dirs.length === 0 ? (
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%", color: "var(--ink-4)", fontSize: 13 }}>
-                  하위 폴더가 없습니다.
-                </div>
-              ) : (
-                browseData?.dirs.map(dir => (
-                  <div
-                    key={dir.path}
-                    onDoubleClick={() => navigateTo(dir.path)}
-                    onClick={() => setAgentWorkdir(dir.path)}
-                    style={{
-                      padding: "7px 16px", display: "flex", alignItems: "center", gap: 10,
-                      cursor: "pointer", borderBottom: "1px solid #f0f0f0",
-                      background: agentWorkdir === dir.path ? "#cce5ff" : "transparent",
-                      userSelect: "none",
-                    }}
-                    onMouseEnter={e => { if (agentWorkdir !== dir.path) e.currentTarget.style.background = "#f0f4ff"; }}
-                    onMouseLeave={e => { if (agentWorkdir !== dir.path) e.currentTarget.style.background = "transparent"; }}
-                  >
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0 }}>
-                      <path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V7z" fill="#FFB900" />
-                    </svg>
-                    <span style={{ fontSize: 13, color: "#222", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{dir.name}</span>
-                  </div>
-                ))
-              )}
-            </div>
-
-            {/* 하단 선택창 + 버튼 */}
-            <div style={{ padding: "10px 16px", background: "#f3f3f3", borderTop: "1px solid #ddd", display: "flex", alignItems: "center", gap: 10 }}>
-              <div style={{ flex: 1, padding: "5px 10px", background: "var(--white)", border: "1px solid #c0c0c0", borderRadius: 4, fontSize: 13, fontFamily: "monospace", color: "#333", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                {agentWorkdir || "폴더를 선택하세요"}
-              </div>
-              <button className="ghost" onClick={() => setShowFolderPicker(false)} style={{ minHeight: 30, padding: "0 16px", fontSize: 13 }}>취소</button>
-              <button onClick={() => { setShowFolderPicker(false); setBrowseData(null); }} style={{ minHeight: 30, padding: "0 16px", fontSize: 13 }} disabled={!agentWorkdir}>
-                확인
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* ── Mail Modal ──────────────────────────────────────────── */}
       {selectedMail && (
-        <div className="modal-overlay" onClick={handleCloseMail} role="dialog" aria-modal="true">
-          <div className="modal" onClick={e => e.stopPropagation()}>
-            <div className="modal-head">
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <span className={`pill ${selectedMail.label}`}>{LABEL_TEXT[selectedMail.label]}</span>
-                <h2 style={{ marginTop: 8, fontSize: 16, lineHeight: 1.35 }}>{selectedMail.subject}</h2>
-                <p className="modal-meta">{selectedMail.sender} · {selectedMail.receivedAt}</p>
-              </div>
-              <button className="ghost modal-close" onClick={handleCloseMail}>✕ 닫기</button>
-            </div>
-            <div className="modal-body">
-              {mailBodyLoading ? (
-                <div style={{ textAlign: "center", padding: "32px 0" }}>
-                  <span className="spinner" style={{ borderColor: "rgba(0,0,0,.12)", borderTopColor: "var(--brand)", width: 24, height: 24, borderWidth: 3 }} />
-                  <p style={{ marginTop: 12, fontSize: 13, color: "var(--ink-5)" }}>본문 불러오는 중…</p>
-                </div>
-              ) : (
-                <pre className="mail-body-text">{mailBody || selectedMail.summary}</pre>
-              )}
-            </div>
-            <div className="modal-footer">
-              <button className="ghost" onClick={() => { setDraftMailId(selectedMail.id); handleCloseMail(); setTimeout(() => document.getElementById("mail")?.scrollIntoView({ behavior: "smooth" }), 100); }}>
-                ✉️ 답장 초안 만들기
-              </button>
-              <button onClick={handleCloseMail}>닫기</button>
-            </div>
-          </div>
-        </div>
+        <MailModal
+          mail={selectedMail}
+          body={mailBody}
+          loading={mailBodyLoading}
+          onClose={handleCloseMail}
+          onReply={() => { setDraftMailId(selectedMail.id); handleCloseMail(); setTimeout(() => document.getElementById("mail")?.scrollIntoView({ behavior: "smooth" }), 100); }}
+        />
       )}
     </div>
   );
