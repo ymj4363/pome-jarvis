@@ -23,7 +23,7 @@ import AgentSection from "./agent/AgentSection";
 import LedgerAlerts from "./ledger/LedgerAlerts";
 import LedgerSection from "./ledger/LedgerSection";
 import MailModal from "./mail/MailModal";
-import { countOverdue } from "./ledger/utils";
+import { countOpenSales, countOverdue, formatKRW, weekReceivableSum } from "./ledger/utils";
 
 /* ── 컴포넌트 ───────────────────────────────────────────────────── */
 
@@ -886,13 +886,27 @@ export default function App() {
         {activeSection === "briefing" && <header className="hero" id="briefing">
           <div className="hero-text">
             <p className="eyebrow">{auth ? `${auth.user.name}님의 운영판` : "오늘의 운영판"}</p>
-            <h1>중요한 일만<br />먼저 정리했습니다.</h1>
-            <p>일정, 메일, 할 일을 한 화면에서 확인하고<br />실행이 필요한 항목은 승인 대기함에서 처리합니다.</p>
+            <h1>{new Date().toLocaleDateString("ko-KR", { month: "long", day: "numeric", weekday: "long" })}</h1>
+            <p>할 일 <strong>{openTasks.length}건</strong> · 승인 대기 <strong>{pendingApprovals.length}건</strong> · 이번 주 받을 돈 <strong>{formatKRW(weekReceivableSum(ledger))}</strong></p>
           </div>
           <div className="hero-metrics">
-            <div className="hero-metric"><strong>{unreadImportant.length}</strong><span>중요 메일</span></div>
-            <div className="hero-metric"><strong>{openTasks.length}</strong><span>열린 할 일</span></div>
-            <div className="hero-metric"><strong>{pendingApprovals.length}</strong><span>승인 대기</span></div>
+            {[
+              { id: "mail",     label: "중요 메일",  value: unreadImportant.length },
+              { id: "meeting",  label: "열린 할 일", value: openTasks.length },
+              { id: "approval", label: "승인 대기",  value: pendingApprovals.length },
+              { id: "ledger",   label: "미수 건",    value: countOpenSales(ledger) },
+            ].map(metric => (
+              <div
+                key={metric.id}
+                className={`hero-metric ${metric.value === 0 ? "dim" : "accent"}`}
+                role="button" tabIndex={0}
+                onClick={() => setActiveSection(metric.id)}
+                onKeyDown={e => e.key === "Enter" && setActiveSection(metric.id)}
+                title={`${metric.label} 화면으로 이동`}
+              >
+                <strong>{metric.value}</strong><span>{metric.label}</span>
+              </div>
+            ))}
           </div>
         </header>}
 

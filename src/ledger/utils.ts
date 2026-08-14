@@ -10,6 +10,12 @@ export const isDueSoon = (entry: LedgerEntry, today: string) => {
   return entry.due_date >= today && entry.due_date <= end.toISOString().slice(0, 10);
 };
 export const countOverdue = (data: LedgerData | null) => data ? data.entries.filter(entry => isOverdue(entry, todayKST())).length : 0;
+export const countOpenSales = (data: LedgerData | null) => data ? data.entries.filter(entry => entry.kind === "sale" && entry.status === "open").length : 0;
+export const weekReceivableSum = (data: LedgerData | null) => {
+  if (!data) return 0;
+  const today = todayKST();
+  return data.entries.filter(entry => entry.kind === "sale" && entry.status === "open" && isDueSoon(entry, today)).reduce((sum, entry) => sum + entry.amount, 0);
+};
 export const calcCommission = (base: number, rate: number) => Math.round(base * rate / 100);
 
 // 금액 입력 필드용: 입력과 동시에 천단위 콤마 표시 / 저장 시 숫자로 환원 (빈 값은 NaN → 검증에서 걸림)

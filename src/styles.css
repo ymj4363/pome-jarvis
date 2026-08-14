@@ -459,7 +459,7 @@ textarea {
   right: 8%;
   width: 320px;
   height: 320px;
-  background: radial-gradient(circle, rgba(31, 94, 255, .22) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(245, 163, 0, .20) 0%, transparent 70%);
   pointer-events: none;
 }
 .hero::after {
@@ -469,11 +469,11 @@ textarea {
   left: 30%;
   width: 200px;
   height: 200px;
-  background: radial-gradient(circle, rgba(31, 94, 255, .10) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(245, 163, 0, .09) 0%, transparent 70%);
   pointer-events: none;
 }
 
-.hero-text .eyebrow { color: #93b4ff; }
+.hero-text .eyebrow { color: #FFC66B; }
 .hero-text h1 {
   font-size: clamp(24px, 3.5vw, 42px);
   line-height: 1.1;
@@ -2162,3 +2162,11 @@ button.mail-trash-btn:hover {
 .ledger-period-row > span { color: var(--ink-4); font-size: 12px; }
 .ledger-sum { display: flex; align-items: center; justify-content: space-between; padding: 9px 12px; border-radius: var(--r-sm); background: var(--brand-light); border: 1px solid var(--brand-muted); font-size: 12px; color: var(--ink-6); }
 .ledger-sum strong { color: var(--brand-dark); font-size: 14px; }
+
+/* 히어로 데이터 요약·지표 카드 위계 */
+.hero-text > p strong { color: #F5A300; font-weight: 700; }
+.hero-metric { cursor: pointer; }
+.hero-metric.dim { opacity: .45; }
+.hero-metric.dim:hover { opacity: .85; }
+.hero-metric.accent strong { color: #F5A300; }
+.hero-metric.accent { border-color: rgba(245, 163, 0, .35); }
