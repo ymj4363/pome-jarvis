@@ -11,3 +11,7 @@ export const isDueSoon = (entry: LedgerEntry, today: string) => {
 };
 export const countOverdue = (data: LedgerData | null) => data ? data.entries.filter(entry => isOverdue(entry, todayKST())).length : 0;
 export const calcCommission = (base: number, rate: number) => Math.round(base * rate / 100);
+
+// 금액 입력 필드용: 입력과 동시에 천단위 콤마 표시 / 저장 시 숫자로 환원 (빈 값은 NaN → 검증에서 걸림)
+export const formatAmountInput = (value: string) => { const digits = value.replace(/[^\d]/g, ""); return digits ? Number(digits).toLocaleString("ko-KR") : ""; };
+export const parseAmountInput = (value: string) => { const digits = value.replace(/[^\d]/g, ""); return digits ? Number(digits) : NaN; };
