@@ -17,6 +17,9 @@ export default function LedgerSection({ data, accessToken, onReload, showToast, 
   const [showEntryForm, setShowEntryForm] = useState(false);
   const [entryForm, setEntryForm] = useState<EntryForm>(initialForm);
   const [filter, setFilter] = useState<"open" | "paid" | "all">("open");
+  const [period, setPeriod] = useState<"all" | "thisMonth" | "lastMonth" | "3m" | "custom">("all");
+  const [periodFrom, setPeriodFrom] = useState("");
+  const [periodTo, setPeriodTo] = useState("");
   const [editingEntryId, setEditingEntryId] = useState<string | null>(null);
   const [dateEditing, setDateEditing] = useState<string | null>(null);
   const [partnerName, setPartnerName] = useState("");
@@ -111,16 +114,38 @@ export default function LedgerSection({ data, accessToken, onReload, showToast, 
   if (!accessToken) return <div className="empty-state"><div className="empty-icon">💰</div><p>구글 계정 연동 후 사용할 수 있습니다.</p></div>;
   if (!data) return <div className="empty-state"><div className="empty-icon">💰</div><p>수금 데이터를 불러오는 중입니다.</p></div>;
 
-  const orderedEntries = (kind: LedgerKind) => data.entries.filter(entry => entry.kind === kind && (filter === "all" || filter === entry.status))
-    .sort((a, b) => Number(isOverdue(b, today)) - Number(isOverdue(a, today)) || Number(a.due_date === null) - Number(b.due_date === null) || (a.due_date ?? "").localeCompare(b.due_date ?? ""));
+  // 기간 필터 기준일: 완료 보기는 실입금일, 그 외는 예정일 — 없으면 등록일로 대체
+  const entryDateFor = (entry: LedgerEntry) =>
+    (filter === "paid" ? entry.paid_date ?? entry.due_date : entry.due_date) ?? entry.created_at.slice(0, 10);
+  const periodRange = (): [string, string] | null => {
+    const ym = today.slice(0, 7);
+    if (period === "thisMonth") return [`${ym}-01`, `${ym}-31`];
+    if (period === "lastMonth") { const d = new Date(`${ym}-01T00:00:00Z`); d.setUTCMonth(d.getUTCMonth() - 1); const m = d.toISOString().slice(0, 7); return [`${m}-01`, `${m}-31`]; }
+    if (period === "3m") { const d = new Date(`${today}T00:00:00Z`); d.setUTCMonth(d.getUTCMonth() - 3); return [d.toISOString().slice(0, 10), today]; }
+    if (period === "custom") return periodFrom || periodTo ? [periodFrom || "0000-01-01", periodTo || "9999-12-31"] : null;
+    return null;
+  };
+  const orderedEntries = (kind: LedgerKind) => {
+    const range = periodRange();
+    return data.entries.filter(entry => entry.kind === kind && (filter === "all" || filter === entry.status)
+        && (!range || (entryDateFor(entry) >= range[0] && entryDateFor(entry) <= range[1])))
+      .sort((a, b) => Number(isOverdue(b, today)) - Number(isOverdue(a, today)) || Number(a.due_date === null) - Number(b.due_date === null) || (a.due_date ?? "").localeCompare(b.due_date ?? ""));
+  };
   const monthly = data.entries.filter(entry => entry.created_at.slice(0, 7) === today.slice(0, 7));
   const dashboardEntries = data.entries.filter(entry => entry.status === "open");
 
-  const entryList = (kind: LedgerKind) => <>
+  const entryList = (kind: LedgerKind) => {
+    const list = orderedEntries(kind);
+    return <>
     <div className="ledger-toolbar">
       <button onClick={() => { if (showEntryForm) { resetEntryForm(); } else { setEntryForm(initialForm); setEditingEntryId(null); setShowEntryForm(true); } }}>{showEntryForm ? "닫기" : "+ 등록"}</button>
       <div className="ledger-filters">{(["open", "paid", "all"] as const).map(value => <button key={value} className={filter === value ? "" : "ghost"} onClick={() => setFilter(value)}>{value === "open" ? (kind === "sale" ? "미수" : "미지급") : value === "paid" ? "완료" : "전체"}</button>)}</div>
     </div>
+    <div className="ledger-period-row">
+      {([["all", "전체 기간"], ["thisMonth", "이번 달"], ["lastMonth", "지난 달"], ["3m", "최근 3개월"], ["custom", "직접 지정"]] as const).map(([id, label]) => <button key={id} className={period === id ? "" : "ghost"} onClick={() => setPeriod(id)}>{label}</button>)}
+      {period === "custom" && <><input type="date" value={periodFrom} onChange={event => setPeriodFrom(event.target.value)} /><span>~</span><input type="date" value={periodTo} onChange={event => setPeriodTo(event.target.value)} /></>}
+    </div>
+    {list.length > 0 && <div className="ledger-sum"><span>{list.length}건</span><strong>합계 {formatKRW(list.reduce((sum, entry) => sum + entry.amount, 0))}</strong></div>}
     {showEntryForm && <form className="event-form ledger-form" onSubmit={event => void saveEntry(kind, event)}>
       {editingEntryId && <strong className="ledger-form-mode">✏️ 거래 수정</strong>}
       {kind === "sale" && <div className="ledger-radio-row">{(["direct", "commission"] as SaleType[]).map(value => <label key={value}><input type="radio" checked={entryForm.sale_type === value} onChange={() => setEntryForm(form => ({ ...form, sale_type: value }))} /> {SALE_TYPE_LABEL[value]}</label>)}</div>}
@@ -136,9 +161,10 @@ export default function LedgerSection({ data, accessToken, onReload, showToast, 
         {editingEntryId && <button type="button" className="ghost" onClick={resetEntryForm}>취소</button>}
       </div>
     </form>}
-    <div className="ledger-list">{orderedEntries(kind).map(entry => <EntryRow key={entry.id} entry={entry} partnerName={partnerNameById.get(entry.partner_id) ?? "-"} today={today} dateEditing={dateEditing === entry.id} onComplete={complete} onDelete={removeEntry} onEdit={() => startEditEntry(entry)} onDateEdit={() => setDateEditing(entry.id)} onDateSave={date => { void updateDueDate(entry, date); setDateEditing(null); }} />)}</div>
-    {!orderedEntries(kind).length && <div className="empty-state"><div className="empty-icon">💰</div><p>표시할 {KIND_LABEL[kind]} 거래가 없습니다.</p></div>}
+    <div className="ledger-list">{list.map(entry => <EntryRow key={entry.id} entry={entry} partnerName={partnerNameById.get(entry.partner_id) ?? "-"} today={today} dateEditing={dateEditing === entry.id} onComplete={complete} onDelete={removeEntry} onEdit={() => startEditEntry(entry)} onDateEdit={() => setDateEditing(entry.id)} onDateSave={date => { void updateDueDate(entry, date); setDateEditing(null); }} />)}</div>
+    {!list.length && <div className="empty-state"><div className="empty-icon">💰</div><p>표시할 {KIND_LABEL[kind]} 거래가 없습니다.</p></div>}
   </>;
+  };
 
   return <div className="ledger-section">
     <div className="meeting-tabs ledger-tabs">{[["dashboard", "대시보드"], ["sale", "매출"], ["purchase", "매입"], ["settings", "거래처·반복"]].map(([id, label]) => <button key={id} className={tab === id ? "" : "ghost"} onClick={() => { setTab(id as typeof tab); resetEntryForm(); }}>{label}</button>)}</div>

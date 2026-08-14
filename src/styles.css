@@ -2154,3 +2154,11 @@ button.mail-trash-btn:hover {
 .ledger-form-mode { color: var(--brand-dark); font-size: 13px; }
 .ledger-form-actions { display: flex; gap: 8px; }
 .ledger-form-actions button[type="submit"] { flex: 1; }
+
+/* Ledger 기간 필터·합계 */
+.ledger-period-row { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.ledger-period-row button { min-height: 28px; padding: 0 10px; font-size: 12px; }
+.ledger-period-row input[type="date"] { border: 1.5px solid var(--ink-2); border-radius: var(--r-sm); height: 32px; padding: 0 8px; font: inherit; font-size: 12px; }
+.ledger-period-row > span { color: var(--ink-4); font-size: 12px; }
+.ledger-sum { display: flex; align-items: center; justify-content: space-between; padding: 9px 12px; border-radius: var(--r-sm); background: var(--brand-light); border: 1px solid var(--brand-muted); font-size: 12px; color: var(--ink-6); }
+.ledger-sum strong { color: var(--brand-dark); font-size: 14px; }
