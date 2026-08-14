@@ -5,10 +5,10 @@
 /* ── Design Tokens ─────────────────────────────────────────────── */
 :root {
   /* Brand */
-  --brand:        #f97316;
-  --brand-dark:   #ea580c;
-  --brand-light:  #fff7ed;
-  --brand-muted:  #fed7aa;
+  --brand:        #F5A300;
+  --brand-dark:   #D98E00;
+  --brand-light:  #FFF9EB;
+  --brand-muted:  #F8E3B0;
 
   /* Semantic status */
   --danger:        #dc2626;
@@ -294,7 +294,7 @@ textarea {
   margin: 0 0 4px;
   background: rgba(234,88,12,.10);
   border: none;
-  border-left: 3px solid #ea580c;
+  border-left: 3px solid #D98E00;
   border-radius: 0 var(--r-sm) var(--r-sm) 0;
   cursor: pointer;
   transition: background var(--t);
@@ -306,7 +306,7 @@ textarea {
   font-weight: 700;
   letter-spacing: .05em;
   text-transform: uppercase;
-  color: #c2410c;
+  color: #B37D00;
 }
 
 /* CSS chevron — 폰트 의존 없이 border로 그림 */
@@ -314,8 +314,8 @@ textarea {
   display: inline-block;
   width: 6px;
   height: 6px;
-  border-right: 2px solid #ea580c;
-  border-bottom: 2px solid #ea580c;
+  border-right: 2px solid #D98E00;
+  border-bottom: 2px solid #D98E00;
   transform: rotate(-45deg);         /* 기본: ▶ 오른쪽 방향 */
   transition: transform .2s ease;
   margin-top: 1px;
@@ -1361,7 +1361,7 @@ button.mail-trash-btn {
   box-shadow: none !important;
 }
 .task-actions .mail-trash-btn:nth-child(1) {
-  color: #f97316;
+  color: #F5A300;
   opacity: .82;
 }
 .task-actions .mail-trash-btn:nth-child(2) {
@@ -1379,8 +1379,8 @@ button.mail-trash-btn {
   box-shadow: var(--sh-sm) !important;
 }
 .task-actions .mail-trash-btn:nth-child(1):hover {
-  color: #ea580c !important;
-  background: #fff7ed !important;
+  color: #D98E00 !important;
+  background: #FFF9EB !important;
 }
 .task-actions .mail-trash-btn:nth-child(2):hover {
   color: var(--warning) !important;
@@ -2080,25 +2080,25 @@ button.mail-trash-btn:hover {
 
 /* ── 할 일 상단 고정 ─────────────────────────────────────────────── */
 .task-card.pinned {
-  box-shadow: var(--sh-sm), inset 3px 0 0 #f97316;
+  box-shadow: var(--sh-sm), inset 3px 0 0 #F5A300;
   background: #fffbf5;
 }
 .task-card.pinned:hover {
-  box-shadow: var(--sh-md), inset 3px 0 0 #f97316;
+  box-shadow: var(--sh-md), inset 3px 0 0 #F5A300;
   background: var(--white);
 }
 .task-actions .mail-trash-btn.pin-active {
   opacity: 1 !important;
   color: #7c2d12 !important;
-  background: #ffedd5 !important;
-  border: 1.5px solid #ea580c !important;
+  background: #FBEDCB !important;
+  border: 1.5px solid #D98E00 !important;
   box-shadow: 0 0 0 2px rgba(234, 88, 12, .16), var(--sh-xs) !important;
   filter: none !important;
 }
 .task-actions .mail-trash-btn.pin-active:hover {
   color: #7c2d12 !important;
-  background: #fed7aa !important;
-  border-color: #c2410c !important;
+  background: #F8E3B0 !important;
+  border-color: #B37D00 !important;
   box-shadow: 0 0 0 2px rgba(234, 88, 12, .28), var(--sh-sm) !important;
 }
 
@@ -2143,3 +2143,8 @@ button.mail-trash-btn:hover {
 .ledger-alerts strong { color: var(--ink); }
 .ledger-alerts button { justify-self: start; min-height: 28px; padding: 0 9px; }
 @media (max-width: 800px) { .ledger-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); } .ledger-settings { grid-template-columns: 1fr; } .ledger-row { align-items: flex-start; flex-wrap: wrap; } .ledger-entry-main { order: 1; } .ledger-pill { order: 0; } .ledger-due, .ledger-amount, .ledger-mini-pill { order: 2; } .ledger-row > button { order: 3; } }
+
+/* Ledger 수정 폼 보조 */
+.ledger-form-mode { color: var(--brand-dark); font-size: 13px; }
+.ledger-form-actions { display: flex; gap: 8px; }
+.ledger-form-actions button[type="submit"] { flex: 1; }
