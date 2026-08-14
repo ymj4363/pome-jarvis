@@ -109,7 +109,7 @@ input[type="time"]:focus,
 input[type="email"]:focus {
   outline: none;
   border-color: var(--brand);
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, .12);
+  box-shadow: 0 0 0 3px rgba(245, 163, 0, .25);
 }
 
 /* ── Buttons ────────────────────────────────────────────────────── */
@@ -134,7 +134,7 @@ button {
 }
 button:hover:not(:disabled) {
   background: var(--brand-dark);
-  box-shadow: 0 4px 12px rgba(37, 99, 235, .35);
+  box-shadow: 0 4px 12px rgba(245, 163, 0, .30);
 }
 button:active:not(:disabled) { transform: scale(0.97); }
 button:disabled { opacity: .45; cursor: not-allowed; }
@@ -189,7 +189,7 @@ select, textarea {
 select:focus, textarea:focus {
   outline: none;
   border-color: var(--brand);
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, .12);
+  box-shadow: 0 0 0 3px rgba(245, 163, 0, .25);
 }
 select {
   min-height: 40px;
@@ -280,7 +280,7 @@ textarea {
 .nav-section-divider {
   height: 1px;
   margin: 14px 8px 10px;
-  background: linear-gradient(90deg, rgba(234,88,12,.65), rgba(234,88,12,.15));
+  background: linear-gradient(90deg, rgba(217, 142, 0,.65), rgba(217, 142, 0,.15));
   border-radius: 1px;
 }
 
@@ -292,14 +292,15 @@ textarea {
   width: 100%;
   padding: 8px 10px;
   margin: 0 0 4px;
-  background: rgba(234,88,12,.10);
+  background: rgba(217, 142, 0,.10);
   border: none;
   border-left: 3px solid #D98E00;
   border-radius: 0 var(--r-sm) var(--r-sm) 0;
   cursor: pointer;
   transition: background var(--t);
 }
-.nav-apps-toggle:hover { background: rgba(234,88,12,.17); }
+/* 전역 button:hover(진한 앰버 채움)보다 우선하도록 :not(:disabled) 포함 — 글자 가림 방지 */
+.nav-apps-toggle:hover:not(:disabled) { background: rgba(217, 142, 0, .15); box-shadow: none; }
 
 .nav-apps-toggle-label {
   font-size: 11px;
@@ -332,7 +333,7 @@ textarea {
   padding-left: 0;
 }
 .nav-list-apps a:hover {
-  background: rgba(234,88,12,.06);
+  background: rgba(217, 142, 0,.06);
 }
 
 .nav-list {
@@ -2092,14 +2093,14 @@ button.mail-trash-btn:hover {
   color: #7c2d12 !important;
   background: #FBEDCB !important;
   border: 1.5px solid #D98E00 !important;
-  box-shadow: 0 0 0 2px rgba(234, 88, 12, .16), var(--sh-xs) !important;
+  box-shadow: 0 0 0 2px rgba(217, 142, 0, .16), var(--sh-xs) !important;
   filter: none !important;
 }
 .task-actions .mail-trash-btn.pin-active:hover {
   color: #7c2d12 !important;
   background: #F8E3B0 !important;
   border-color: #B37D00 !important;
-  box-shadow: 0 0 0 2px rgba(234, 88, 12, .28), var(--sh-sm) !important;
+  box-shadow: 0 0 0 2px rgba(217, 142, 0, .28), var(--sh-sm) !important;
 }
 
 /* ── Ledger ── */
@@ -2119,7 +2120,9 @@ button.mail-trash-btn:hover {
 .ledger-stat strong, .ledger-amount { color: var(--ink); font-size: 17px; font-weight: 800; text-align: right; white-space: nowrap; }
 .ledger-dashboard-list { margin-top: 18px; }
 .ledger-dashboard-list h3, .ledger-settings h3 { margin-bottom: 8px; }
-.ledger-dashboard-list > p, .ledger-settings > section > p { color: var(--ink-5); font-size: 13px; margin-bottom: 10px; }
+.ledger-settings > section > p { color: var(--ink-5); font-size: 13px; margin-bottom: 10px; }
+.ledger-dashboard-list > p { padding: 14px 16px; border: 1px dashed var(--ink-2); border-radius: var(--r-sm); background: var(--ink-0); color: var(--ink-4); font-size: 13px; }
+.ledger-stat-accent strong { color: var(--brand-dark); }
 .ledger-list { display: grid; gap: 7px; margin-top: 12px; }
 .ledger-row { display: flex; align-items: center; gap: 9px; padding: 10px 12px; border: 1px solid var(--ink-2); border-radius: var(--r-sm); background: var(--white); }
 .ledger-row > span:first-of-type:not(.ledger-pill) { display: grid; flex: 1; min-width: 120px; }
@@ -2128,6 +2131,9 @@ button.mail-trash-btn:hover {
 .ledger-entry-main em { font-size: 10px; color: var(--brand-dark); font-style: normal; font-weight: 700; }
 .ledger-entry-main input, .ledger-due input { min-height: 30px; }
 .ledger-due { min-width: 104px; }
+/* 열 정렬: 행마다 금액 오른쪽 끝·배지 폭이 일직선으로 맞게 */
+.ledger-entry .ledger-amount { min-width: 112px; }
+.ledger-entry .ledger-mini-pill { min-width: 64px; text-align: center; }
 .ledger-date-button { padding: 0 7px !important; }
 .ledger-pill, .ledger-mini-pill { border-radius: var(--r-f); padding: 2px 8px; font-size: 11px; font-weight: 700; white-space: nowrap; }
 .ledger-pill-open { background: var(--ink-1); color: var(--ink-6); }
