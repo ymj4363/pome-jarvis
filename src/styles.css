@@ -2101,3 +2101,45 @@ button.mail-trash-btn:hover {
   border-color: #c2410c !important;
   box-shadow: 0 0 0 2px rgba(234, 88, 12, .28), var(--sh-sm) !important;
 }
+
+/* ── Ledger ── */
+.ledger-section { display: grid; gap: 18px; }
+.ledger-tabs { margin-top: 0; flex-wrap: wrap; }
+.ledger-tabs button { flex: 1; min-width: 92px; }
+.ledger-toolbar, .ledger-filters, .ledger-radio-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.ledger-toolbar { justify-content: space-between; }
+.ledger-filters button, .ledger-row button { min-height: 30px; padding: 0 10px; font-size: 12px; }
+.ledger-form { margin-top: 4px; }
+.ledger-form small { color: var(--ink-5); }
+.ledger-form input[type="number"] { border: 1.5px solid var(--ink-2); border-radius: var(--r-sm); height: 40px; padding: 0 12px; font: inherit; }
+.ledger-estimate { color: var(--brand-dark); font-size: 14px; }
+.ledger-stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+.ledger-stat { border: 1px solid var(--ink-2); border-radius: var(--r); padding: 16px; background: var(--ink-0); display: grid; gap: 4px; }
+.ledger-stat span { color: var(--ink-5); font-size: 12px; }
+.ledger-stat strong, .ledger-amount { color: var(--ink); font-size: 17px; font-weight: 800; text-align: right; white-space: nowrap; }
+.ledger-dashboard-list { margin-top: 18px; }
+.ledger-dashboard-list h3, .ledger-settings h3 { margin-bottom: 8px; }
+.ledger-dashboard-list > p, .ledger-settings > section > p { color: var(--ink-5); font-size: 13px; margin-bottom: 10px; }
+.ledger-list { display: grid; gap: 7px; margin-top: 12px; }
+.ledger-row { display: flex; align-items: center; gap: 9px; padding: 10px 12px; border: 1px solid var(--ink-2); border-radius: var(--r-sm); background: var(--white); }
+.ledger-row > span:first-of-type:not(.ledger-pill) { display: grid; flex: 1; min-width: 120px; }
+.ledger-row small { color: var(--ink-5); font-size: 12px; }
+.ledger-entry-main { display: grid; flex: 1; min-width: 130px; }
+.ledger-entry-main em { font-size: 10px; color: var(--brand-dark); font-style: normal; font-weight: 700; }
+.ledger-entry-main input, .ledger-due input { min-height: 30px; }
+.ledger-due { min-width: 104px; }
+.ledger-date-button { padding: 0 7px !important; }
+.ledger-pill, .ledger-mini-pill { border-radius: var(--r-f); padding: 2px 8px; font-size: 11px; font-weight: 700; white-space: nowrap; }
+.ledger-pill-open { background: var(--ink-1); color: var(--ink-6); }
+.ledger-pill-overdue { background: var(--danger-bg); color: var(--danger); border: 1px solid var(--danger-border); }
+.ledger-pill-soon { background: var(--warning-bg); color: var(--warning); border: 1px solid var(--warning-border); }
+.ledger-pill-paid { background: var(--success-bg); color: var(--success); border: 1px solid var(--success-border); }
+.ledger-mini-pill { background: var(--brand-light); color: var(--brand-dark); }
+.ledger-entry-paid { opacity: .58; }
+.ledger-settings { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; }
+.ledger-settings section { min-width: 0; }
+.ledger-toggle { display: inline-flex; gap: 4px; align-items: center; font-size: 12px; white-space: nowrap; }
+.ledger-alerts { display: grid; gap: 5px; padding: 12px; margin-bottom: 14px; border: 1px solid var(--warning-border); border-radius: var(--r-sm); background: var(--warning-bg); font-size: 12px; color: var(--ink-7); }
+.ledger-alerts strong { color: var(--ink); }
+.ledger-alerts button { justify-self: start; min-height: 28px; padding: 0 9px; }
+@media (max-width: 800px) { .ledger-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); } .ledger-settings { grid-template-columns: 1fr; } .ledger-row { align-items: flex-start; flex-wrap: wrap; } .ledger-entry-main { order: 1; } .ledger-pill { order: 0; } .ledger-due, .ledger-amount, .ledger-mini-pill { order: 2; } .ledger-row > button { order: 3; } }

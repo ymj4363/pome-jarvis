@@ -2,3 +2,10 @@ name = "pome-jarvis"
 compatibility_date = "2026-05-26"
 pages_build_output_dir = "dist"
 
+# 매출·매입(ledger) 저장용 D1 — 로컬 개발은 이 바인딩으로 동작.
+# 프로덕션 배포 전 `npx wrangler d1 create pome-jarvis-db` 후 database_id 교체 필요.
+[[d1_databases]]
+binding = "DB"
+database_name = "pome-jarvis-db"
+database_id = "00000000-0000-0000-0000-000000000000"
+

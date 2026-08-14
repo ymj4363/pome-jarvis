@@ -14,11 +14,16 @@ import {
 } from "./services/googleAuthService";
 import { createLog } from "./services/logService";
 import { fetchAgentServerStatus } from "./services/agentService";
+import { fetchLedgerBootstrap } from "./services/ledgerService";
 import type { Approval, BriefingResult, CalendarEvent, CalendarEventData, LogEntry, Mail, Task } from "./types";
+import type { LedgerData } from "./ledger/types";
 import { usePersistentState } from "./usePersistentState";
 import { GoogleIcon, IS_LOCAL, LABEL_TEXT, MEETING_TABS, NAV_ITEMS, RISK_TEXT, type MeetingMode, type Toast } from "./constants";
 import AgentSection from "./agent/AgentSection";
+import LedgerAlerts from "./ledger/LedgerAlerts";
+import LedgerSection from "./ledger/LedgerSection";
 import MailModal from "./mail/MailModal";
+import { countOverdue } from "./ledger/utils";
 
 /* ── 컴포넌트 ───────────────────────────────────────────────────── */
 
@@ -38,6 +43,7 @@ export default function App() {
   const [dataLoading, setDataLoading] = useState(false);
   const [toasts, setToasts]           = useState<Toast[]>([]);
   const [activeSection, setActiveSection] = useState("briefing");
+  const [ledger, setLedger] = useState<LedgerData | null>(null);
 
   /* ── Mail modal ─────────────────────────────────────────────── */
   const [selectedMail, setSelectedMail]   = useState<Mail | null>(null);
@@ -127,6 +133,13 @@ export default function App() {
     setToasts(prev => [...prev, { id, message, type }]);
     setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 4200);
   }, []);
+
+  const reloadLedger = useCallback(async () => {
+    if (!auth) { setLedger(null); return; }
+    try { setLedger(await fetchLedgerBootstrap(auth.accessToken)); } catch {}
+  }, [auth]);
+
+  useEffect(() => { reloadLedger(); }, [reloadLedger]);
 
   /* ── 실제 데이터 로드 ───────────────────────────────────────── */
   const loadRealData = useCallback(async (accessToken: string, userName?: string) => {
@@ -708,6 +721,7 @@ export default function App() {
               item.id === "approval" && pendingApprovals.length > 0 ? { count: pendingApprovals.length, color: "danger" } :
               item.id === "mail"     && auth && mails.length > 0     ? { count: mails.length,            color: "brand" }  :
               item.id === "meeting"  && openTasks.length > 0         ? { count: openTasks.length,         color: "warning" } :
+              item.id === "ledger"   && countOverdue(ledger) > 0     ? { count: countOverdue(ledger),      color: "danger" } :
               null;
             return (
               <a
@@ -1019,6 +1033,7 @@ export default function App() {
 
           {/* AI 브리핑 / 추천 액션 */}
           <article className="panel panel-briefing">
+            <LedgerAlerts data={ledger} onNavigate={() => setActiveSection("ledger")} />
             <h2 style={{ display: "flex", alignItems: "center", gap: 8 }}>
               {briefing ? "AI 브리핑" : "추천 액션"}
               {briefingLoading && <span className="spinner" style={{ borderColor: "rgba(0,0,0,.12)", borderTopColor: "var(--brand)", width: 13, height: 13 }} />}
@@ -1054,6 +1069,8 @@ export default function App() {
           </article>
 
         </section>}
+
+        {activeSection === "ledger" && <section className="panel" id="ledger"><LedgerSection data={ledger} accessToken={auth?.accessToken ?? null} onReload={reloadLedger} showToast={showToast} addLog={addLog} /></section>}
 
         {activeSection === "meeting" && <section className="grid two section-meeting" id="meeting">
           <article className="panel">
@@ -1200,6 +1217,7 @@ export default function App() {
                 </button>
               </div>
             </div>
+            <LedgerAlerts data={ledger} onNavigate={() => setActiveSection("ledger")} />
             <div className="task-add-row">
               <textarea
                 className="task-add-input"
@@ -1640,6 +1658,7 @@ export default function App() {
             item.id === "approval" && pendingApprovals.length > 0 ? { count: pendingApprovals.length, color: "danger" } :
             item.id === "mail"     && auth && mails.length > 0     ? { count: mails.length,            color: "brand" }  :
             item.id === "meeting"  && openTasks.length > 0         ? { count: openTasks.length,         color: "warning" } :
+            item.id === "ledger"   && countOverdue(ledger) > 0     ? { count: countOverdue(ledger),      color: "danger" } :
             null;
           return (
             <a

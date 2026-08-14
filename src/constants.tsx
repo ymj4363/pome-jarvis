@@ -24,6 +24,7 @@ export const NAV_ITEMS = IS_LOCAL
   ? [{ id: "agent", icon: "🤖", label: "에이전트" }]
   : [
       { id: "briefing", icon: "📊", label: "운영판" },
+      { id: "ledger",   icon: "💰", label: "매출·매입" },
       { id: "meeting",  icon: "📝",  label: "회의록" },
       { id: "mail",     icon: "✉️",  label: "메일" },
       { id: "approval", icon: "✅",  label: "승인" },
