@@ -2127,13 +2127,22 @@ button.mail-trash-btn:hover {
 .ledger-row { display: flex; align-items: center; gap: 9px; padding: 10px 12px; border: 1px solid var(--ink-2); border-radius: var(--r-sm); background: var(--white); }
 .ledger-row > span:first-of-type:not(.ledger-pill) { display: grid; flex: 1; min-width: 120px; }
 .ledger-row small { color: var(--ink-5); font-size: 12px; }
+/* 대시보드 행의 거래 메모: 두 번째 줄로 접히지 않게 줄바꿈 허용 */
+.ledger-row small.ledger-memo { margin-top: 2px; color: var(--ink-4); white-space: pre-wrap; word-break: break-word; }
 .ledger-entry-main { display: grid; flex: 1; min-width: 130px; }
 .ledger-entry-main em { font-size: 10px; color: var(--brand-dark); font-style: normal; font-weight: 700; }
 .ledger-entry-main input, .ledger-due input { min-height: 30px; }
 .ledger-due { min-width: 104px; }
 /* 열 정렬: 행마다 금액 오른쪽 끝·배지 폭이 일직선으로 맞게 */
-.ledger-entry .ledger-amount { min-width: 112px; }
+.ledger-entry .ledger-amount { min-width: 150px; }
 .ledger-entry .ledger-mini-pill { min-width: 64px; text-align: center; }
+.ledger-entry .ledger-pill { min-width: 76px; text-align: center; }
+/* 금액 방향 라벨: 미수·미지급은 브랜드색, 완료 건은 회색 */
+.ledger-amount-label { margin-right: 5px; font-size: 11px; font-weight: 700; color: var(--brand-dark); }
+.ledger-amount-label.is-done { color: var(--ink-5); }
+/* 수금·지급 처리 버튼: 채운 알약(상태 배지)과 헷갈리지 않게 테두리형으로 낮춘다 */
+button.ledger-action { background: var(--white); color: var(--brand-dark); box-shadow: inset 0 0 0 1.5px var(--brand); }
+button.ledger-action:hover:not(:disabled) { background: var(--brand-light); box-shadow: inset 0 0 0 1.5px var(--brand-dark), 0 4px 12px rgba(245, 163, 0, .20); }
 .ledger-date-button { padding: 0 7px !important; }
 .ledger-pill, .ledger-mini-pill { border-radius: var(--r-f); padding: 2px 8px; font-size: 11px; font-weight: 700; white-space: nowrap; }
 .ledger-pill-open { background: var(--ink-1); color: var(--ink-6); }

@@ -3,6 +3,9 @@ import type { LedgerData, LedgerEntry } from "./types";
 export const formatKRW = (amount: number) => `${new Intl.NumberFormat("ko-KR").format(amount)}원`;
 export const todayKST = () => new Date(Date.now() + 9 * 3600 * 1000).toISOString().slice(0, 10);
 export const isOverdue = (entry: LedgerEntry, today: string) => entry.status === "open" && !!entry.due_date && entry.due_date < today;
+// 지연 일수(D+n): 대시보드 배지와 홈 알림이 같은 계산을 쓰도록 여기 한 곳에 둔다
+export const overdueDays = (entry: LedgerEntry, today: string) =>
+  Math.max(1, Math.floor((new Date(`${today}T00:00:00Z`).getTime() - new Date(`${entry.due_date}T00:00:00Z`).getTime()) / 86400000));
 export const isDueSoon = (entry: LedgerEntry, today: string) => {
   if (entry.status !== "open" || !entry.due_date) return false;
   const end = new Date(`${today}T00:00:00Z`);
