@@ -7,9 +7,7 @@
  * Required env var: GOOGLE_CLIENT_SECRET
  */
 
-type Env = {
-  GOOGLE_CLIENT_SECRET?: string;
-};
+import { json, type Env } from "./_session";
 
 const jsonHeaders = { "content-type": "application/json; charset=utf-8" };
 
@@ -65,10 +63,33 @@ export async function onRequestPost({
     })
   });
 
-  const data = await tokenRes.json();
+  const data = await tokenRes.json() as {
+    access_token: string; expires_in: number; refresh_token?: string;
+    error?: string; error_description?: string; error_uri?: string;
+  };
+  if (!tokenRes.ok) {
+    return json({ error: data.error, error_description: data.error_description, error_uri: data.error_uri }, tokenRes.status);
+  }
 
-  return new Response(JSON.stringify(data), {
-    status: tokenRes.status,
-    headers: jsonHeaders
-  });
+  let sessionId: string | null = null;
+  if (data.refresh_token) {
+    sessionId = crypto.randomUUID();
+    let email = "";
+    try {
+      const userRes = await fetch("https://www.googleapis.com/oauth2/v3/userinfo", {
+        headers: { Authorization: `Bearer ${data.access_token}` }
+      });
+      if (userRes.ok) {
+        const user = await userRes.json() as { email?: string };
+        if (typeof user.email === "string") email = user.email;
+      }
+    } catch {
+      // 이메일은 운영 식별용이므로 조회 실패 시에도 세션 저장
+    }
+    const now = new Date().toISOString();
+    await env.DB.prepare("INSERT INTO auth_sessions (id, refresh_token, email, created_at, last_used_at) VALUES (?, ?, ?, ?, ?)")
+      .bind(sessionId, data.refresh_token, email, now, now).run();
+  }
+
+  return json({ access_token: data.access_token, expires_in: data.expires_in, session_id: sessionId }, tokenRes.status);
 }

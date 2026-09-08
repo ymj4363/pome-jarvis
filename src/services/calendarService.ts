@@ -1,3 +1,4 @@
+import { HttpError } from "./utils";
 import type { CalendarEvent, CalendarEventData } from "../types";
 
 /**
@@ -12,7 +13,7 @@ export async function fetchCalendarEvents(accessToken: string, days = 1): Promis
   });
 
   if (!response.ok) {
-    throw new Error(`Calendar fetch failed (${response.status})`);
+    throw new HttpError(`Calendar fetch failed (${response.status})`, response.status);
   }
 
   const data = await response.json() as { events: CalendarEvent[] };
@@ -39,7 +40,7 @@ export async function createCalendarEvent(
       error?: string;
       detail?: string;
     };
-    throw new Error(body.error ?? `Calendar create failed: ${response.status}`);
+    throw new HttpError(body.error ?? `Calendar create failed: ${response.status}`, response.status);
   }
 
   const result = await response.json() as { ok: boolean; id: string; link: string };
@@ -63,6 +64,6 @@ export async function deleteCalendarEvent(
 
   if (!response.ok) {
     const body = await response.json().catch(() => ({ error: "unknown" })) as { error?: string };
-    throw new Error(body.error ?? `Calendar delete failed: ${response.status}`);
+    throw new HttpError(body.error ?? `Calendar delete failed: ${response.status}`, response.status);
   }
 }

@@ -1,3 +1,4 @@
+import { HttpError } from "./utils";
 import type { Mail } from "../types";
 
 /**
@@ -15,7 +16,7 @@ export async function fetchGmailMessages(
 
   if (!response.ok) {
     const body = await response.json().catch(() => ({ error: "unknown" })) as { error?: string };
-    throw new Error(`Gmail fetch failed (${response.status}): ${body.error ?? ""}`);
+    throw new HttpError(`Gmail fetch failed (${response.status}): ${body.error ?? ""}`, response.status);
   }
 
   const data = await response.json() as { mails: Mail[]; nextPageToken?: string };
@@ -34,7 +35,7 @@ export async function fetchMoreMails(
   );
 
   if (!response.ok) {
-    throw new Error(`Gmail fetch more failed (${response.status})`);
+    throw new HttpError(`Gmail fetch more failed (${response.status})`, response.status);
   }
 
   return response.json() as Promise<{ mails: Mail[]; nextPageToken?: string }>;
@@ -51,7 +52,7 @@ export async function fetchMailBody(
   });
 
   if (!response.ok) {
-    throw new Error(`Gmail body fetch failed (${response.status})`);
+    throw new HttpError(`Gmail body fetch failed (${response.status})`, response.status);
   }
 
   const data = await response.json() as { body: string };
@@ -75,7 +76,7 @@ export async function markAsRead(
 
   if (!response.ok) {
     const data = await response.json().catch(() => ({ error: "unknown" })) as { error?: string };
-    throw new Error(data.error ?? `Mark read failed: ${response.status}`);
+    throw new HttpError(data.error ?? `Mark read failed: ${response.status}`, response.status);
   }
 }
 
@@ -96,7 +97,7 @@ export async function trashMail(
 
   if (!response.ok) {
     const data = await response.json().catch(() => ({ error: "unknown" })) as { error?: string };
-    throw new Error(data.error ?? `Trash failed: ${response.status}`);
+    throw new HttpError(data.error ?? `Trash failed: ${response.status}`, response.status);
   }
 }
 
@@ -122,7 +123,7 @@ export async function sendEmail(
       error?: string;
       detail?: string;
     };
-    throw new Error(data.error ?? `Send failed: ${response.status}`);
+    throw new HttpError(data.error ?? `Send failed: ${response.status}`, response.status);
   }
 }
 
@@ -148,7 +149,7 @@ export async function saveDraft(
       error?: string;
       detail?: string;
     };
-    throw new Error(data.error ?? `Draft save failed: ${response.status}`);
+    throw new HttpError(data.error ?? `Draft save failed: ${response.status}`, response.status);
   }
 
   const data = await response.json() as { draftId: string };
