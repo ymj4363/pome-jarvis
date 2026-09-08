@@ -5,10 +5,13 @@ import { draftReply, extractMeetingActions, fetchBriefing } from "./services/ass
 import { createCalendarEvent, deleteCalendarEvent, fetchCalendarEvents } from "./services/calendarService";
 import { fetchGmailMessages, fetchMailBody, fetchMoreMails, markAsRead, saveDraft, trashMail } from "./services/gmailService";
 import {
+  clearAuthState,
   getAuthState,
   handleOAuthCallback,
   hasClientId,
+  isAuthExpired,
   logout,
+  refreshAccessToken,
   startOAuth,
   type AuthState
 } from "./services/googleAuthService";
@@ -27,6 +30,11 @@ import { countOpenSales, countOverdue, formatKRW, weekReceivableSum } from "./le
 
 /* ── 컴포넌트 ───────────────────────────────────────────────────── */
 
+// Gmail·Calendar 오류의 인증 실패 여부 확인
+function isUnauthorized(error: unknown): boolean {
+  return error instanceof Error && "status" in error && error.status === 401;
+}
+
 export default function App() {
 
   /* ── Core state ─────────────────────────────────────────────── */
@@ -40,6 +48,9 @@ export default function App() {
 
   const [assistantBusy, setAssistantBusy] = useState<"draft" | "meeting" | null>(null);
   const [auth, setAuth]               = useState<AuthState | null>(null);
+  const authEpoch = useRef(0);
+  const sessionEnded = useRef(false);
+  const lastActiveAt = useRef(Date.now());
   const [dataLoading, setDataLoading] = useState(false);
   const [toasts, setToasts]           = useState<Toast[]>([]);
   const [activeSection, setActiveSection] = useState("briefing");
@@ -134,6 +145,68 @@ export default function App() {
     setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 4200);
   }, []);
 
+  // 로그아웃과 만료 시 동일한 화면 상태 정리
+  const resetAuth = useCallback(() => {
+    authEpoch.current++;
+    sessionEnded.current = true;
+    setAuth(null); setMails(initialMails); setEvents(initialEvents);
+    setNextPageToken(null); setBriefing(null);
+    setSelectedMail(null); setMailBody("");
+  }, [setEvents]);
+
+  // 갱신 실패 안내는 한 번만 표시
+  const expireSession = useCallback(() => {
+    if (sessionEnded.current) return;
+    clearAuthState();
+    resetAuth();
+    showToast("세션이 만료되었습니다. 다시 로그인해 주세요.", "info");
+  }, [resetAuth, showToast]);
+
+  // 로그아웃 이후 도착한 갱신 결과로 인증 상태가 복구되지 않도록 보호
+  const refreshSession = useCallback(async (sessionId: string): Promise<AuthState | null> => {
+    const epoch = authEpoch.current;
+    const updated = await refreshAccessToken(sessionId, new Date(lastActiveAt.current).toISOString());
+    if (epoch !== authEpoch.current) return null;
+    if (updated) setAuth(updated);
+    else expireSession();
+    return updated;
+  }, [expireSession]);
+
+  // Gmail·Calendar의 401은 토큰 갱신 후 한 번만 재시도
+  const withGoogleAuth = useCallback(async <T,>(accessToken: string, operation: (token: string) => Promise<T>): Promise<T> => {
+    const epoch = authEpoch.current;
+    if (sessionEnded.current) throw new Error("Session ended");
+    const run = async (token: string): Promise<T> => {
+      const result = await operation(token);
+      if (epoch !== authEpoch.current) throw new Error("Session ended");
+      return result;
+    };
+    const current = getAuthState();
+    let token = current?.accessToken ?? accessToken;
+    try {
+      return await run(token);
+    } catch (error) {
+      if (!isUnauthorized(error) || epoch !== authEpoch.current) throw error;
+      const latest = getAuthState();
+      if (latest && latest.accessToken !== token && !isAuthExpired(latest)) {
+        token = latest.accessToken;
+      } else {
+        const updated = latest?.sessionId ? await refreshSession(latest.sessionId) : null;
+        if (!updated) {
+          if (epoch === authEpoch.current) expireSession();
+          throw error;
+        }
+        token = updated.accessToken;
+      }
+      try {
+        return await run(token);
+      } catch (retryError) {
+        if (isUnauthorized(retryError) && epoch === authEpoch.current) expireSession();
+        throw retryError;
+      }
+    }
+  }, [expireSession, refreshSession]);
+
   const reloadLedger = useCallback(async () => {
     if (!auth) { setLedger(null); return; }
     try { setLedger(await fetchLedgerBootstrap(auth.accessToken)); } catch {}
@@ -143,13 +216,15 @@ export default function App() {
 
   /* ── 실제 데이터 로드 ───────────────────────────────────────── */
   const loadRealData = useCallback(async (accessToken: string, userName?: string) => {
+    const epoch = authEpoch.current;
     setDataLoading(true);
     setBriefing(null);
     try {
       const [gmailResult, calendarResult] = await Promise.allSettled([
-        fetchGmailMessages(accessToken),
-        fetchCalendarEvents(accessToken)
+        withGoogleAuth(accessToken, fetchGmailMessages),
+        withGoogleAuth(accessToken, fetchCalendarEvents)
       ]);
+      if (epoch !== authEpoch.current || sessionEnded.current) return;
 
       let loadedMails:  Mail[]           = mails;
       let loadedEvents: CalendarEvent[]  = events;
@@ -179,7 +254,7 @@ export default function App() {
         );
         setBriefingLoading(true);
         fetchBriefing(loadedMails, loadedEvents, userName)
-          .then(result => setBriefing(result))
+          .then(result => { if (epoch === authEpoch.current) setBriefing(result); })
           .finally(() => setBriefingLoading(false));
       }
     } finally {
@@ -187,7 +262,7 @@ export default function App() {
       lastRefreshedAt.current = Date.now();
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [showToast]);
+  }, [showToast, withGoogleAuth]);
 
   /* ── OAuth 콜백 & 세션 복원 ─────────────────────────────────── */
   useEffect(() => {
@@ -210,6 +285,7 @@ export default function App() {
     if (code && state) {
       handleOAuthCallback(code, state)
         .then(newAuth => {
+          sessionEnded.current = false;
           setAuth(newAuth);
           resetMeeting();
           return loadRealData(newAuth.accessToken, newAuth.user.name);
@@ -219,8 +295,46 @@ export default function App() {
     }
 
     const existing = getAuthState();
-    if (existing) { setAuth(existing); resetMeeting(); loadRealData(existing.accessToken, existing.user.name); }
-  }, [loadRealData, showToast]);
+    if (existing) {
+      sessionEnded.current = false;
+      resetMeeting();
+      if (isAuthExpired(existing) && existing.sessionId) {
+        void refreshSession(existing.sessionId).then(updated => {
+          if (updated) return loadRealData(updated.accessToken, updated.user.name);
+        });
+      } else {
+        setAuth(existing);
+        void loadRealData(existing.accessToken, existing.user.name);
+      }
+    }
+  }, [loadRealData, refreshSession, showToast]);
+
+  // 만료 5분 전에 갱신하고 정리 시 예약 취소
+  useEffect(() => {
+    if (!auth) return;
+    const delay = auth.sessionId ? auth.expiresAt - 5 * 60_000 - Date.now() : auth.expiresAt - 60_000 - Date.now();
+    const timer = window.setTimeout(() => {
+      if (auth.sessionId) void refreshSession(auth.sessionId);
+      else expireSession();
+    }, Math.max(0, delay));
+    return () => window.clearTimeout(timer);
+  }, [auth, expireSession, refreshSession]);
+
+  // 사용자 입력과 탭 복귀 시각을 기록하고 정리 시 리스너 해제
+  useEffect(() => {
+    const recordActivity = () => { lastActiveAt.current = Date.now(); };
+    const recordVisibility = () => {
+      if (document.visibilityState === "visible") recordActivity();
+    };
+    window.addEventListener("pointerdown", recordActivity, true);
+    window.addEventListener("keydown", recordActivity, true);
+    document.addEventListener("visibilitychange", recordVisibility);
+    return () => {
+      window.removeEventListener("pointerdown", recordActivity, true);
+      window.removeEventListener("keydown", recordActivity, true);
+      document.removeEventListener("visibilitychange", recordVisibility);
+    };
+  }, []);
 
   /* ── 활성 섹션 추적 (로컬: 스크롤 감지 / 배포: 클릭 전환) ───── */
   useEffect(() => {
@@ -280,9 +394,10 @@ export default function App() {
     setLogs(current => [createLog(entry), ...current]);
 
   const handleLogin  = () => startOAuth().catch(() => showToast("로그인 시작에 실패했습니다.", "error"));
-  const handleLogout = () => {
-    logout(); setAuth(null); setMails(initialMails); setEvents(initialEvents);
-    setNextPageToken(null); setBriefing(null);
+  const handleLogout = async () => {
+    const pendingLogout = logout();
+    resetAuth();
+    await pendingLogout;
     showToast("로그아웃했습니다.", "info");
   };
   const handleRefreshData = () => { if (auth) loadRealData(auth.accessToken, auth.user.name); };
@@ -294,12 +409,13 @@ export default function App() {
       setMailBodyLoading(true);
       // 본문 로드 + 읽음 처리 병렬 실행
       const [bodyResult] = await Promise.allSettled([
-        fetchMailBody(auth.accessToken, mail.id),
-        markAsRead(auth.accessToken, mail.id)
+        withGoogleAuth(auth.accessToken, token => fetchMailBody(token, mail.id)),
+        withGoogleAuth(auth.accessToken, token => markAsRead(token, mail.id))
           .then(() => setMails(current => current.filter(m => m.id !== mail.id)))
           .catch(() => {/* 읽음 처리 실패는 무시 */})
       ]);
       setMailBodyLoading(false);
+      if (sessionEnded.current) return;
       setMailBody(
         bodyResult.status === "fulfilled"
           ? (bodyResult.value || mail.summary)
@@ -317,10 +433,11 @@ export default function App() {
     setMails(current => current.filter(m => m.id !== mail.id)); // 즉시 UI에서 제거
     if (auth) {
       try {
-        await trashMail(auth.accessToken, mail.id);
+        await withGoogleAuth(auth.accessToken, token => trashMail(token, mail.id));
         showToast("메일을 휴지통으로 이동했습니다.", "info");
         addLog({ action: "mail.trashed", detail: `"${mail.subject}" 를 휴지통으로 이동.`, status: "success" });
       } catch (err) {
+        if (sessionEnded.current) return;
         setMails(current => [mail, ...current]); // 실패 시 복원
         showToast(`삭제 실패: ${err instanceof Error ? err.message : "알 수 없는 오류"}`, "error");
       }
@@ -334,10 +451,10 @@ export default function App() {
     if (!auth || !nextPageToken) return;
     setMoreMailsLoading(true);
     try {
-      const result = await fetchMoreMails(auth.accessToken, nextPageToken);
+      const result = await withGoogleAuth(auth.accessToken, token => fetchMoreMails(token, nextPageToken));
       setMails(current => [...current, ...result.mails]);
       setNextPageToken(result.nextPageToken ?? null);
-    } catch { showToast("추가 메일을 불러오지 못했습니다.", "error"); }
+    } catch { if (!sessionEnded.current) showToast("추가 메일을 불러오지 못했습니다.", "error"); }
     finally { setMoreMailsLoading(false); }
   };
 
@@ -346,10 +463,11 @@ export default function App() {
     setEvents(current => current.filter(e => e.id !== event.id));
     if (auth) {
       try {
-        await deleteCalendarEvent(auth.accessToken, event.id);
+        await withGoogleAuth(auth.accessToken, token => deleteCalendarEvent(token, event.id));
         showToast(`"${event.title}" 일정을 취소했습니다.`, "info");
         addLog({ action: "calendar.deleted", detail: `"${event.title}" 일정 취소.`, status: "success" });
       } catch (err) {
+        if (sessionEnded.current) return;
         setEvents(current => [event, ...current]);
         showToast(`일정 취소 실패: ${err instanceof Error ? err.message : "오류"}`, "error");
       }
@@ -395,10 +513,10 @@ export default function App() {
     if (!auth) return;
     setCalendarLoading(true);
     try {
-      const result = await fetchCalendarEvents(auth.accessToken, days);
+      const result = await withGoogleAuth(auth.accessToken, token => fetchCalendarEvents(token, days));
       setEvents(result);
     } catch {
-      showToast("캘린더 일정을 불러오지 못했습니다.", "error");
+      if (!sessionEnded.current) showToast("캘린더 일정을 불러오지 못했습니다.", "error");
     } finally {
       setCalendarLoading(false);
     }
@@ -641,15 +759,16 @@ export default function App() {
     setExecutingApprovalId(approvalId);
     try {
       if (item.type === "email_send" && item.recipientEmail && item.draft) {
-        await saveDraft(auth.accessToken, item.recipientEmail, item.replySubject ?? item.title, item.draft);
+        await withGoogleAuth(auth.accessToken, token => saveDraft(token, item.recipientEmail!, item.replySubject ?? item.title, item.draft!));
         showToast(`📝 Gmail 임시저장 완료 — Gmail에서 최종 발송하세요.`, "success");
         addLog({ action: "email.draft_saved", detail: `"${item.replySubject ?? item.title}" 임시저장 완료 (수신: ${item.recipientEmail}).`, status: "success" });
       } else if (item.type === "calendar_change" && item.calendarEventData) {
-        await createCalendarEvent(auth.accessToken, item.calendarEventData);
+        await withGoogleAuth(auth.accessToken, token => createCalendarEvent(token, item.calendarEventData!));
         showToast(`📅 일정 생성 완료: ${item.calendarEventData.title}`, "success");
         addLog({ action: "calendar.created", detail: `"${item.calendarEventData.title}" 일정 추가 완료.`, status: "success" });
       }
     } catch (err) {
+      if (sessionEnded.current) return;
       const msg = err instanceof Error ? err.message : "알 수 없는 오류";
       showToast(`실행 실패: ${msg}`, "error");
       addLog({ action: "execution.failed", detail: `${item.title} 실행 실패: ${msg}`, status: "failed" });

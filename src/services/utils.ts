@@ -1,3 +1,10 @@
+/** 기존 오류 메시지에 HTTP 상태를 함께 전달 */
+export class HttpError extends Error {
+  constructor(message: string, public readonly status: number) {
+    super(message);
+  }
+}
+
 export function makeId(prefix: string) {
   return `${prefix}-${Date.now()}-${Math.random().toString(16).slice(2)}`;
 }
