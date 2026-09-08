@@ -7,7 +7,7 @@
  * Required env var: GOOGLE_CLIENT_SECRET
  */
 
-import { json, type Env } from "./_session";
+import { json, purgeIdleSessions, type Env } from "./_session";
 
 const jsonHeaders = { "content-type": "application/json; charset=utf-8" };
 
@@ -47,6 +47,15 @@ export async function onRequestPost({
       JSON.stringify({ error: "Missing required fields" }),
       { status: 400, headers: jsonHeaders }
     );
+  }
+
+  // 고아 세션 청소 — 토큰 교환보다 **앞**에 둔다.
+  // 뒤에 두면 교환이 실패할 때 청소도 건너뛰어, 로그인이 계속 실패하는 동안 오래된
+  // 자격증명이 그대로 남는다. 청소 실패가 로그인을 막아서는 안 되므로 삼킨다.
+  try {
+    await purgeIdleSessions(env);
+  } catch {
+    // 청소는 위생 작업이다 — 실패해도 로그인은 진행한다
   }
 
   // Google OAuth 토큰 교환 (server-side — client_secret 포함)

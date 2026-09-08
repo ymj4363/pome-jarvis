@@ -45,6 +45,27 @@ export async function deleteSession(env: Env, id: string): Promise<void> {
   await env.DB.prepare("DELETE FROM auth_sessions WHERE id = ?").bind(id).run();
 }
 
+// 유휴 상한을 넘긴 고아 세션을 구글 폐기 후 삭제하고 삭제 건수를 돌려준다
+//
+// 탭을 닫으면 브라우저의 session_id는 사라지지만 D1 행은 남는다. 그 행에는 refresh
+// 요청이 영영 오지 않으므로 refresh 시점의 유휴 판정이 닿지 않는다 — 아무도 치우지
+// 않으면 탭을 닫을 때마다 refresh token이 하나씩 영구히 쌓인다.
+// 로그인이 사람이 실제로 오는 유일한 시점이라 청소 시점으로 쓴다(크론 불필요).
+export async function purgeIdleSessions(env: Env): Promise<number> {
+  const cutoff = new Date(Date.now() - IDLE_LIMIT_MS).toISOString();
+  // toISOString은 자리수가 고정된 UTC라 사전순 비교가 시간순과 일치한다
+  const { results } = await env.DB
+    .prepare("SELECT id, refresh_token FROM auth_sessions WHERE last_used_at < ?")
+    .bind(cutoff)
+    .all<{ id: string; refresh_token: string }>();
+
+  for (const row of results) {
+    await revokeAtGoogle(row.refresh_token);
+    await deleteSession(env, row.id);
+  }
+  return results.length;
+}
+
 // 구글 자격증명 폐기는 로컬 세션 삭제를 막지 않도록 best-effort로 수행
 export async function revokeAtGoogle(refreshToken: string): Promise<void> {
   try {

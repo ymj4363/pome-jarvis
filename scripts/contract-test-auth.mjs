@@ -325,6 +325,36 @@ async function main() {
     );
   }
 
+  /* T14 — 고아 세션이 정리되어야 한다.
+         탭을 닫으면 브라우저의 session_id 는 사라지지만 D1 행은 남는다. 유휴 판정은
+         /api/auth/refresh 가 호출될 때만 도는데, 고아 세션은 정의상 아무도 refresh 를
+         부르지 않으므로 판정이 영원히 닿지 않는다 — 탭을 닫을 때마다 refresh token 이
+         하나씩 영구히 쌓인다.
+         로그인(/api/auth/token)을 청소 시점으로 쓴다. 크론이 필요 없고, 사람이 실제로
+         오는 유일한 시점이다. 정리는 구글 토큰 교환 **앞**에 두어야 한다 — 뒤에 두면
+         교환이 실패할 때 정리도 건너뛰고, 이 검사도 가짜 code 로는 도달할 수 없다. */
+  {
+    const stale = "contract-orphan-old";
+    const fresh = "contract-orphan-new";
+    seedSession(stale, IDLE_LIMIT_HOURS + 1);
+    seedSession(fresh, 1);
+    // 구글은 이 code 를 거부한다. 그래도 정리는 이미 끝나 있어야 한다.
+    const r = await post("/api/auth/token", {
+      client_id: "contract-test", code: "invalid-code-for-contract-test",
+      code_verifier: "contract-verifier", redirect_uri: "http://127.0.0.1:8788"
+    });
+    check(
+      "T14 로그인 시 유휴 초과 고아 세션이 삭제됨 (부재 검사)",
+      countSession(stale) === 0,
+      `유휴 ${IDLE_LIMIT_HOURS + 1}시간 행이 ${countSession(stale)}건 남아 있다 — 탭을 닫을 때마다 자격증명이 쌓인다 (응답 status=${r.status})`
+    );
+    check(
+      "T14-b 유휴 상한 안쪽 세션은 살아남음 (과잉 삭제 방지)",
+      countSession(fresh) === 1,
+      `살아 있어야 할 세션이 ${countSession(fresh)}건 — 정리가 과도해 멀쩡한 세션을 지운다`
+    );
+  }
+
   /* T11 — 테이블이 마이그레이션 파일로 만들어져야 한다.
          로컬 D1 상태는 gitignore 라, 마이그레이션 없이 손으로 만든 테이블로도
          위 검사는 전부 통과한다 — 그 구멍을 막는 검사다. */
@@ -351,7 +381,7 @@ async function main() {
     console.log("\n실패 목록:");
     failures.forEach(f => console.log(`  - ${f}`));
   }
-  selfCheck(pass + fail >= 18, `검사가 ${pass + fail}건만 돌았다 — 18건 이상이어야 한다 (검사기 고장)`);
+  selfCheck(pass + fail >= 20, `검사가 ${pass + fail}건만 돌았다 — 20건 이상이어야 한다 (검사기 고장)`);
   process.exit(fail > 0 ? 1 : 0);
 }
 
